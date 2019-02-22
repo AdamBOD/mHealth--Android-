@@ -1,5 +1,6 @@
 package com.example.mhealth
 
+import android.app.Service
 import android.os.Bundle
 import android.support.design.widget.BottomNavigationView
 import android.support.v4.app.Fragment
@@ -7,6 +8,9 @@ import android.support.v7.app.AppCompatActivity
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
+import android.content.Intent
+
+
 
 class MainActivity : AppCompatActivity() {
     private val homeFragment = HomeFragment.newInstance()
@@ -38,6 +42,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val intent = Intent(this, BackgroundService::class.java)
+        startService(intent)
+
         setContentView(R.layout.activity_main)
 
         openFragment(homeFragment)
