@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <android.support.design.widget.BottomNavigationView
+        android:id="@+id/navigation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="0dp"
+        android:layout_marginEnd="0dp"
+        android:background="?android:attr/windowBackground"
+        app:labelVisibilityMode="labeled"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:menu="@menu/navigation" />
+    <!--<LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        android:orientation="vertical"
+        android:background="#9E9E9E">
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#FAFAFA"
+            android:layout_marginBottom="0.5dp"
+            android:paddingTop="7dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:text="@string/tile_health"
+                android:textSize="20sp"
+                android:layout_marginBottom="5dp"/>
+
+            <ImageView
+                android:layout_width="100dp"
+                android:layout_height="125dp"
+                android:scaleType="fitXY"
+                android:scaleX="0.75"
+                android:scaleY="0.75"
+                android:layout_gravity="center_horizontal"
+                app:srcCompat="@drawable/tile_health" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:text="Exercise More"
+                android:layout_marginTop="5dp"
+                android:textSize="25sp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2">
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FAFAFA"
+                android:layout_marginTop="0.5dp"
+                android:layout_marginBottom="0.5dp"
+                android:layout_marginRight="0.5dp"
+                android:layout_marginEnd="0.5dp"
+                android:layout_weight="1">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:textSize="15sp"
+                    android:text="@string/tile_heart_rate" />
+                <ImageView
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:layout_marginTop="12.5dp"
+                    android:layout_marginBottom="12.5dp"
+                    android:layout_gravity="center_horizontal"
+                    app:srcCompat="@drawable/tile_heart" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:text="60 BPM"
+                    android:layout_marginTop="5dp"
+                    android:textSize="20sp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FAFAFA"
+                android:layout_marginTop="0.5dp"
+                android:layout_marginBottom="0.5dp"
+                android:layout_marginLeft="0.5dp"
+                android:layout_marginStart="0.5dp"
+                android:layout_weight="1">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:textSize="15sp"
+                    android:text="@string/tile_steps" />
+                <ImageView
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:layout_marginTop="12.5dp"
+                    android:layout_marginBottom="12.5dp"
+                    android:layout_gravity="center_horizontal"
+                    app:srcCompat="@drawable/tile_steps" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:text="5000 Steps"
+                    android:layout_marginTop="5dp"
+                    android:textSize="20sp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2">
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FAFAFA"
+                android:layout_marginTop="0.5dp"
+                android:layout_marginBottom="1dp"
+                android:layout_marginRight="0.5dp"
+                android:layout_marginEnd="0.5dp"
+                android:layout_weight="1">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:textSize="15sp"
+                    android:text="@string/tile_calories" />
+                <ImageView
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:layout_marginTop="12.5dp"
+                    android:layout_marginBottom="12.5dp"
+                    android:layout_gravity="center_horizontal"
+                    app:srcCompat="@drawable/tile_calories" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:text="5500 Calories"
+                    android:layout_marginTop="5dp"
+                    android:textSize="20sp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FAFAFA"
+                android:layout_marginTop="0.5dp"
+                android:layout_marginBottom="1dp"
+                android:layout_marginLeft="0.5dp"
+                android:layout_marginStart="0.5dp"
+                android:layout_weight="1">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:textSize="15sp"
+                    android:text="@string/title_sleep" />
+                <ImageView
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:layout_marginTop="12.5dp"
+                    android:layout_marginBottom="12.5dp"
+                    android:layout_gravity="center_horizontal"
+                    app:srcCompat="@drawable/tile_sleep" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:text="7 Hours 30 Minutes"
+                    android:layout_marginTop="5dp"
+                    android:textSize="20sp"/>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>-->
+
+</android.support.constraint.ConstraintLayout>

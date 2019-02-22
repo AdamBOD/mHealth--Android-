@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/navigation_home"
+        android:icon="@drawable/ic_home"
+        android:title="@string/title_home" />
+
+    <item
+        android:id="@+id/navigation_heart"
+        android:icon="@drawable/ic_heart"
+        android:title="@string/title_heart" />
+
+    <item
+        android:id="@+id/navigation_steps"
+        android:icon="@drawable/ic_steps"
+        android:title="@string/title_steps" />
+
+    <item
+        android:id="@+id/navigation_calories"
+        android:icon="@drawable/ic_calories"
+        android:title="@string/title_calories" />
+
+    <item
+        android:id="@+id/navigation_sleep"
+        android:icon="@drawable/ic_sleep"
+        android:title="@string/title_sleep" />
+
+</menu>
