@@ -27,7 +27,7 @@
     ]>
 <resources>
 
-    <application name="HelloAccessoryConsumer" >
+    <application name="WatchServiceConsumer" >
         <serviceProfile
             id="/com/example/mHealth/WatchService"
             name="WatchService"
