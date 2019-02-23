@@ -51,6 +51,7 @@ public class WatchService extends SAAgentV2 {
     @Override
     protected void onFindPeerAgentsResponse(SAPeerAgent[] peerAgents, int result) {
         if ((result == SAAgentV2.PEER_AGENT_FOUND) && (peerAgents != null)) {
+            Toast.makeText(getApplicationContext(), "FINDPEER_DEVICE_CONNECTED", Toast.LENGTH_LONG).show();
             for(SAPeerAgent peerAgent:peerAgents)
                 requestServiceConnection(peerAgent);
         } else if (result == SAAgentV2.FINDPEER_DEVICE_NOT_CONNECTED) {
