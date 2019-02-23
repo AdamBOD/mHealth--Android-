@@ -33,12 +33,11 @@ public class BackgroundService extends Service {
 
     @Override
     public void onCreate () {
-
+        SAAgentV2.requestAgent(getApplicationContext(), WatchService.class.getName(), watchAgentCallback);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        SAAgentV2.requestAgent(getApplicationContext(), WatchService.class.getName(), watchAgentCallback);
         //watchService.findPeers();
         //watchService.sendData("Heart");
         QueryScheduler queryScheduler = new QueryScheduler();

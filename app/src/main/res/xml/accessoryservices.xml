@@ -27,10 +27,10 @@
     ]>
 <resources>
 
-    <application name="WatchServiceConsumer" >
+    <application name="mHealthMobile" >
         <serviceProfile
             id="/com/example/mHealth/WatchService"
-            name="WatchService"
+            name="mHealthService"
             role="consumer"
             serviceImpl="com.example.mhealth.WatchService"
             version="1.0"

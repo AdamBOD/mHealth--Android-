@@ -21,6 +21,7 @@ import com.samsung.android.sdk.accessory.SASocket;
 
 public class WatchService extends SAAgentV2 {
     private static final String TAG = "WatchService(C)";
+    private static final int WATCH_CHANNEL_ID = 104;
     private static final Class<ServiceConnection> SASOCKET_CLASS = ServiceConnection.class;
     private ServiceConnection mConnectionHandler = null;
     private Handler mHandler = new Handler();
@@ -146,7 +147,7 @@ public class WatchService extends SAAgentV2 {
         boolean retvalue = false;
         if (mConnectionHandler != null) {
             try {
-                mConnectionHandler.send(getServiceChannelId(0), data.getBytes());
+                mConnectionHandler.send(WATCH_CHANNEL_ID, data.getBytes());
                 retvalue = true;
             } catch (IOException e) {
                 e.printStackTrace();
