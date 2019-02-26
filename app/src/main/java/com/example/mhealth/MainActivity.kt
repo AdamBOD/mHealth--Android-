@@ -9,7 +9,8 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import android.content.Intent
-
+import android.widget.Toast
+import com.androidnetworking.AndroidNetworking
 
 
 class MainActivity : AppCompatActivity() {
@@ -43,8 +44,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val intent = Intent(this, BackgroundService::class.java)
-        startService(intent)
+        if (!BackgroundService.serviceRunning) {
+            val intent = Intent(this, BackgroundService::class.java)
+            startService(intent)
+        }
 
         setContentView(R.layout.activity_main)
 
@@ -52,6 +55,8 @@ class MainActivity : AppCompatActivity() {
 
         val navigation = findViewById<View>(R.id.navigation) as BottomNavigationView
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
+
+        AndroidNetworking.initialize(getApplicationContext());
     }
 
     private fun openFragment(fragment: Fragment) {

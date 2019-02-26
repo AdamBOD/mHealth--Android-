@@ -12,6 +12,7 @@ import com.samsung.android.sdk.accessory.SAAgentV2;
 import java.util.Calendar;
 
 public class BackgroundService extends Service {
+    public static boolean serviceRunning = false;
     private static final String TAG = "WatchService(C)";
     private WatchService watchService = null;
 
@@ -33,6 +34,7 @@ public class BackgroundService extends Service {
 
     @Override
     public void onCreate () {
+        //Toast.makeText(getApplicationContext(), "Service created", Toast.LENGTH_LONG).show();
         SAAgentV2.requestAgent(getApplicationContext(), WatchService.class.getName(), watchAgentCallback);
     }
 
@@ -42,6 +44,7 @@ public class BackgroundService extends Service {
         //watchService.sendData("Heart");
         QueryScheduler queryScheduler = new QueryScheduler();
         queryScheduler.startScheduler();
+        serviceRunning = true;
         return START_STICKY;
     }
 
@@ -58,6 +61,7 @@ public class BackgroundService extends Service {
             watchService.releaseAgent();
             watchService = null;
         }
+        serviceRunning = false;
         super.onDestroy();
     }
 
@@ -75,13 +79,13 @@ public class BackgroundService extends Service {
                 }
 
                 // TODO: Remove this reassignment of the intervalCheck variable
-                intervalCheck = "0";
+                //intervalCheck = "0";
                 if (intervalCheck.equals("5") || intervalCheck.equals("0")) {
-                    Toast.makeText(getApplicationContext(), "Querying watch", Toast.LENGTH_LONG).show();
+                    //Toast.makeText(getApplicationContext(), "Querying watch", Toast.LENGTH_LONG).show();
                     if (watchService != null) {
                         watchService.findPeers();
                     }  else {
-                        Toast.makeText(getApplicationContext(), "WatchServiceAgent is null", Toast.LENGTH_LONG).show();
+                        //Toast.makeText(getApplicationContext(), "WatchServiceAgent is null", Toast.LENGTH_LONG).show();
                     }
 
                 }
