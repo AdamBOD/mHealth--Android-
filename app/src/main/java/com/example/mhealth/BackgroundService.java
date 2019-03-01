@@ -65,7 +65,7 @@ public class BackgroundService extends Service {
         super.onDestroy();
     }
 
-    public class QueryScheduler {
+    private class QueryScheduler {
         private final int interval = 60000; // 1 Minute
         private Handler schedulerHandler = new Handler();
         private Runnable runnable = new Runnable(){
@@ -94,7 +94,7 @@ public class BackgroundService extends Service {
             }
         };
 
-        public void startScheduler () {
+        private void startScheduler () {
             runnable.run();
         }
     }
