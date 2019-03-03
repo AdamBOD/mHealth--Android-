@@ -7,9 +7,18 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.androidnetworking.AndroidNetworking;
+import com.androidnetworking.common.Priority;
+import com.androidnetworking.error.ANError;
+import com.androidnetworking.interfaces.JSONArrayRequestListener;
 import com.samsung.android.sdk.accessory.SAAgentV2;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Calendar;
+import java.util.Date;
 
 public class BackgroundService extends Service {
     public static boolean serviceRunning = false;
@@ -21,6 +30,8 @@ public class BackgroundService extends Service {
         public void onAgentAvailable(SAAgentV2 agent) {
             Log.d("Agent Initialized", "Agent has been successfully initialized");
             watchService = (WatchService) agent;
+            QueryScheduler queryScheduler = new QueryScheduler();
+            queryScheduler.startScheduler();
         }
 
         @Override
@@ -34,16 +45,12 @@ public class BackgroundService extends Service {
 
     @Override
     public void onCreate () {
-        //Toast.makeText(getApplicationContext(), "Service created", Toast.LENGTH_LONG).show();
         SAAgentV2.requestAgent(getApplicationContext(), WatchService.class.getName(), watchAgentCallback);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //watchService.findPeers();
-        //watchService.sendData("Heart");
-        QueryScheduler queryScheduler = new QueryScheduler();
-        queryScheduler.startScheduler();
+        logData("Background Service Started");
         serviceRunning = true;
         return START_STICKY;
     }
@@ -62,6 +69,7 @@ public class BackgroundService extends Service {
             watchService = null;
         }
         serviceRunning = false;
+        logData("Service stopped");
         super.onDestroy();
     }
 
@@ -85,6 +93,7 @@ public class BackgroundService extends Service {
                     if (watchService != null) {
                         watchService.findPeers();
                     }  else {
+                        logData("WatchServiceAgent is null");
                         //Toast.makeText(getApplicationContext(), "WatchServiceAgent is null", Toast.LENGTH_LONG).show();
                     }
 
@@ -96,6 +105,37 @@ public class BackgroundService extends Service {
 
         private void startScheduler () {
             runnable.run();
+            if (watchService != null) {
+                watchService.findPeers();
+            }  else {
+                logData("WatchServiceAgent is null");
+                //Toast.makeText(getApplicationContext(), "WatchServiceAgent is null", Toast.LENGTH_LONG).show();
+                watchService.findPeers();
+            }
         }
+    }
+    static void logData (String message) {
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("message", message);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        AndroidNetworking.post("https://custom-logging-api.herokuapp.com/logs")
+                .addJSONObjectBody(jsonObject) // posting json
+                .setTag("")
+                .setPriority(Priority.MEDIUM)
+                .build()
+                .getAsJSONArray(new JSONArrayRequestListener() {
+                    @Override
+                    public void onResponse(JSONArray response) {
+                        // do anything with response
+                    }
+                    @Override
+                    public void onError(ANError error) {
+                        // handle error
+                    }
+                });
     }
 }

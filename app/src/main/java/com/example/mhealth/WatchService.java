@@ -6,6 +6,8 @@ that samsung packages with their Samsung Accessory Protocol SDK
 package com.example.mhealth;
 
 import java.io.IOException;
+import java.util.Date;
+import java.util.UUID;
 
 import android.content.Context;
 import android.os.Binder;
@@ -27,20 +29,30 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import io.realm.Realm;
+
+import static com.example.mhealth.BackgroundService.logData;
+
 public class WatchService extends SAAgentV2 {
     private static final String TAG = "WatchService(C)";
     private static final int WATCH_CHANNEL_ID = 104;
     private static final Class<ServiceConnection> SASOCKET_CLASS = ServiceConnection.class;
     private ServiceConnection mConnectionHandler = null;
+    private static RealmDBHandler realmDBHandler = null;
+    private HTTPHandler httpHandler = null;
     private Handler mHandler = new Handler();
     private Context mContext = null;
     private boolean receivedData = false;
+    private boolean retryConnection = false;
 
     public WatchService(Context context) {
         super(TAG, context, SASOCKET_CLASS);
         mContext = context;
 
         SA gWatch = new SA();
+
+        realmDBHandler = new RealmDBHandler();
+        httpHandler = new HTTPHandler();
 
         try {
             gWatch.initialize(mContext);
@@ -61,14 +73,13 @@ public class WatchService extends SAAgentV2 {
     @Override
     protected void onFindPeerAgentsResponse(SAPeerAgent[] peerAgents, int result) {
         if ((result == SAAgentV2.PEER_AGENT_FOUND) && (peerAgents != null)) {
-            //Toast.makeText(getApplicationContext(), "CONNECTED", Toast.LENGTH_SHORT).show();
             for(SAPeerAgent peerAgent:peerAgents)
                 requestServiceConnection(peerAgent);
         } else if (result == SAAgentV2.FINDPEER_DEVICE_NOT_CONNECTED) {
-            //Toast.makeText(getApplicationContext(), "FINDPEER_DEVICE_NOT_CONNECTED", Toast.LENGTH_LONG).show();
+            logData ("FINDPEER_DEVICE_NOT_CONNECTED");
             Log.e("Watch Error","Disconnected");
         } else if (result == SAAgentV2.FINDPEER_SERVICE_NOT_FOUND) {
-            //Toast.makeText(getApplicationContext(), "FINDPEER_SERVICE_NOT_FOUND", Toast.LENGTH_LONG).show();
+            logData ("FINDPEER_SERVICE_NOT_FOUND");
             Log.e("Watch Error","Disconnected");
         } else {
             //Toast.makeText(getApplicationContext(), "Could not find the watch", Toast.LENGTH_LONG).show();
@@ -95,6 +106,7 @@ public class WatchService extends SAAgentV2 {
             //Toast.makeText(mContext, "CONNECTION_DUPLICATE_REQUEST", Toast.LENGTH_LONG).show();
         } else {
             //Toast.makeText(mContext, "Failed to connect", Toast.LENGTH_LONG).show();
+            logData ("Failed to connect");
         }
     }
 
@@ -133,45 +145,49 @@ public class WatchService extends SAAgentV2 {
         @Override
         public void onReceive(int channelId, byte[] data) {
             final String message = new String(data);
-            //addMessage("Received: ", message);
             if (!receivedData) {
                 if (!message.equals("undefined")) {
-                    //Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
-                    receivedData = true;
+                    if (!message.equals("Error getting data from watch.")) {
+                        receivedData = true;
+                        retryConnection = false;
+                        JSONObject jsonObject = new JSONObject();
+                        try {
+                            jsonObject.put("userID", 200);
+                            jsonObject.put("heartbeat", Integer.parseInt(message));
+                            jsonObject.put("stepsTaken", 1200);
+                            jsonObject.put("caloriesBurned", 2200);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
 
-                    JSONObject jsonObject = new JSONObject();
-                    try {
-                        jsonObject.put("userID", 200);
-                        jsonObject.put("heartbeat", Integer.parseInt(message));
-                        jsonObject.put("stepsTaken", 1200);
-                        jsonObject.put("caloriesBurned", 2200);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                        logData ("Received data: " + message);
+
+                        httpHandler.postData(jsonObject);
+
+                        HeartrateObject heartrateObject = new HeartrateObject(Integer.parseInt(message), new Date());
+                        logData("Heart Rate: " + String.valueOf(heartrateObject.getHeartrate()) + " Date: " + String.valueOf(heartrateObject.getTime()));
+                        realmDBHandler.addToDB(heartrateObject);
+
+                    } else {
+                        if (!retryConnection) {
+                            retryConnection = true;
+                            logData ("Error getting data from watch, trying again");
+                            sendData("Heart");
+                        } else {
+                            retryConnection = false;
+                            logData ("Error getting data from watch, terminating");
+                        }
                     }
-
-                    AndroidNetworking.post("https://mhealth-api-fyp.herokuapp.com/data")
-                            .addJSONObjectBody(jsonObject) // posting json
-                            .setTag("")
-                            .setPriority(Priority.MEDIUM)
-                            .build()
-                            .getAsJSONArray(new JSONArrayRequestListener() {
-                                @Override
-                                public void onResponse(JSONArray response) {
-                                    // do anything with response
-                                }
-                                @Override
-                                public void onError(ANError error) {
-                                    // handle error
-                                }
-                            });
+                } else {
+                    logData ("Error getting data from watch, data undefined, retrying");
+                    sendData("Retry");
                 }
             }
         }
 
         @Override
         protected void onServiceConnectionLost(int reason) {
-            //updateTextView("Disconnected");
-            //closeConnection();
+            closeConnection();
         }
     }
 
@@ -190,6 +206,7 @@ public class WatchService extends SAAgentV2 {
         if (mConnectionHandler != null) {
             try {
                 mConnectionHandler.send(WATCH_CHANNEL_ID, data.getBytes());
+                logData ("Querying Watch");
                 receivedData = false;
                 retvalue = true;
             } catch (IOException e) {
@@ -230,6 +247,59 @@ public class WatchService extends SAAgentV2 {
             return false;
         }
         return true;
+    }
+
+    public class RealmDBHandler {
+        public RealmDBHandler () {}
+
+        public void prepareRealmDB () {
+            /*RealmConfiguration realmConfig = new RealmConfiguration.Builder()
+                    .name("mHealth.realm")
+                    .build();*/
+        }
+
+        public void addToDB (final HeartrateObject heartrate) {
+            Realm realm = Realm.getDefaultInstance();
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute (Realm realm) {
+                    realm.createObject(HeartrateObject.class, UUID.randomUUID().toString());
+                }
+            });
+        }
+
+        public void addToDB (SleepObject sleep) {
+
+        }
+
+        public void addToDB (ExerciseObject exercise) {
+
+        }
+    }
+
+    public class HTTPHandler {
+        public HTTPHandler () {}
+
+        public void postData (JSONObject data) {
+            AndroidNetworking.post("https://mhealth-api-fyp.herokuapp.com/data")
+                    .addJSONObjectBody(data) // posting json
+                    .setTag("")
+                    .setPriority(Priority.MEDIUM)
+                    .build()
+                    .getAsJSONArray(new JSONArrayRequestListener() {
+                        @Override
+                        public void onResponse(JSONArray response) {
+                            // do anything with response
+
+                            logData ("Successfully sent data");
+                        }
+                        @Override
+                        public void onError(ANError error) {
+                            // handle error
+                            logData ("Failed to send data (" + error.getMessage() + ")" + "(" + error.getErrorDetail() + ")");
+                        }
+                    });
+        }
     }
 }
 

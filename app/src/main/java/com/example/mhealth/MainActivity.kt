@@ -11,6 +11,12 @@ import android.widget.TextView
 import android.content.Intent
 import android.widget.Toast
 import com.androidnetworking.AndroidNetworking
+import com.example.mhealth.BackgroundService.logData
+import io.realm.Realm
+import io.realm.RealmConfiguration
+import io.realm.RealmResults
+
+
 
 
 class MainActivity : AppCompatActivity() {
@@ -53,9 +59,24 @@ class MainActivity : AppCompatActivity() {
 
         openFragment(homeFragment)
 
+        Realm.init(applicationContext)
+        val realmConfiguration = RealmConfiguration.Builder()
+                .deleteRealmIfMigrationNeeded()
+                .name("mHealth.realm")
+                .schemaVersion(0)
+                .build()
+        Realm.setDefaultConfiguration(realmConfiguration)
+        val realm = Realm.getDefaultInstance()
+
+        val r = realm.where(HeartrateObject::class.java)
+                .findAll()
+
+        logData(r.toString());
+
         val navigation = findViewById<View>(R.id.navigation) as BottomNavigationView
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
 
+        logData ("Started App")
         AndroidNetworking.initialize(getApplicationContext());
     }
 
