@@ -22,6 +22,9 @@ import io.realm.RealmResults
 class MainActivity : AppCompatActivity() {
     private val homeFragment = HomeFragment.newInstance()
     private val heartFragment = HeartFragment.newInstance()
+    private val stepsFragment = StepsFragment.newInstance()
+    private val caloriesFragment = CaloriesFragment.newInstance()
+    private val sleepFragment = SleepFragment.newInstance()
 
     private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
         when (item.itemId) {
@@ -34,13 +37,16 @@ class MainActivity : AppCompatActivity() {
                 return@OnNavigationItemSelectedListener true
             }
             R.id.navigation_steps -> {
+                openFragment(stepsFragment)
                 return@OnNavigationItemSelectedListener true
             }
 
             R.id.navigation_calories -> {
+                openFragment(caloriesFragment)
                 return@OnNavigationItemSelectedListener true
             }
             R.id.navigation_sleep -> {
+                openFragment(sleepFragment)
                 return@OnNavigationItemSelectedListener true
             }
         }
