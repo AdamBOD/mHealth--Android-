@@ -18,6 +18,7 @@ public class HeartrateObject extends RealmObject {
     public HeartrateObject () {}
 
     public HeartrateObject (int heartRate, Date time) {
+        this.UID = UUID.randomUUID().toString();
         this.heartRate = heartRate;
         this.time = time;
     }

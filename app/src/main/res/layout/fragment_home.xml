@@ -73,10 +73,10 @@
                     android:layout_gravity="center_horizontal"
                     app:srcCompat="@drawable/tile_heart" />
                 <TextView
+                    android:id="@+id/tile_Heartrate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_horizontal"
-                    android:text="60 BPM"
                     android:layout_marginTop="5dp"
                     android:textSize="20sp"/>
             </LinearLayout>

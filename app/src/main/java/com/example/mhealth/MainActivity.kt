@@ -71,7 +71,7 @@ class MainActivity : AppCompatActivity() {
         val r = realm.where(HeartrateObject::class.java)
                 .findAll()
 
-        logData(r.toString());
+        //logData(r.toString())
 
         val navigation = findViewById<View>(R.id.navigation) as BottomNavigationView
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
@@ -80,10 +80,14 @@ class MainActivity : AppCompatActivity() {
         AndroidNetworking.initialize(getApplicationContext());
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        BackgroundService.updateAppState(false)
+    }
+
     private fun openFragment(fragment: Fragment) {
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.container, fragment)
-        transaction.addToBackStack(null)
         transaction.commit()
     }
 

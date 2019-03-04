@@ -4,6 +4,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -24,6 +25,14 @@ public class BackgroundService extends Service {
     public static boolean serviceRunning = false;
     private static final String TAG = "WatchService(C)";
     private WatchService watchService = null;
+    private static Broadcaster broadcaster = null;
+
+    private static Boolean appInForeground = false;
+
+    private static int heartrate = 0;
+    private static int footSteps = 0;
+    private static int caloriesBurned = 0;
+    private static int sleep = 0;
 
     private SAAgentV2.RequestAgentCallback watchAgentCallback = new SAAgentV2.RequestAgentCallback() {
         @Override
@@ -51,6 +60,8 @@ public class BackgroundService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         logData("Background Service Started");
+        broadcaster = new Broadcaster();
+        broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
         serviceRunning = true;
         return START_STICKY;
     }
@@ -73,6 +84,24 @@ public class BackgroundService extends Service {
         super.onDestroy();
     }
 
+    public static void updateAppState (Boolean appState) {
+        if (appState) {
+            if (broadcaster == null) {
+                return;
+            }
+            broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
+        }
+
+        appInForeground = appState;
+    }
+
+    public static void updateData (String type, String data) {
+        if (type.equals("Heart")) {
+            heartrate = Integer.parseInt(data);
+        }
+        broadcaster.sendContentUpdate(type, data);
+    }
+
     private class QueryScheduler {
         private final int interval = 60000; // 1 Minute
         private Handler schedulerHandler = new Handler();
@@ -89,12 +118,10 @@ public class BackgroundService extends Service {
                 // TODO: Remove this reassignment of the intervalCheck variable
                 //intervalCheck = "0";
                 if (intervalCheck.equals("5") || intervalCheck.equals("0")) {
-                    //Toast.makeText(getApplicationContext(), "Querying watch", Toast.LENGTH_LONG).show();
                     if (watchService != null) {
                         watchService.findPeers();
                     }  else {
                         logData("WatchServiceAgent is null");
-                        //Toast.makeText(getApplicationContext(), "WatchServiceAgent is null", Toast.LENGTH_LONG).show();
                     }
 
                 }
@@ -109,7 +136,6 @@ public class BackgroundService extends Service {
                 watchService.findPeers();
             }  else {
                 logData("WatchServiceAgent is null");
-                //Toast.makeText(getApplicationContext(), "WatchServiceAgent is null", Toast.LENGTH_LONG).show();
                 watchService.findPeers();
             }
         }
@@ -137,5 +163,16 @@ public class BackgroundService extends Service {
                         // handle error
                     }
                 });
+    }
+
+    public class Broadcaster {
+        public Broadcaster () {}
+
+        public void sendContentUpdate (String type, String data) {
+            Intent intent = new Intent("contentUpdated");
+            intent.putExtra("contentType", type);
+            intent.putExtra("data", data);
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+        }
     }
 }

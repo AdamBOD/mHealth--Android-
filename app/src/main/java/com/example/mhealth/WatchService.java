@@ -10,8 +10,10 @@ import java.util.Date;
 import java.util.UUID;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Binder;
 import android.os.Handler;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -32,6 +34,7 @@ import org.json.JSONObject;
 import io.realm.Realm;
 
 import static com.example.mhealth.BackgroundService.logData;
+import static com.example.mhealth.BackgroundService.updateData;
 
 public class WatchService extends SAAgentV2 {
     private static final String TAG = "WatchService(C)";
@@ -166,6 +169,9 @@ public class WatchService extends SAAgentV2 {
 
                         HeartrateObject heartrateObject = new HeartrateObject(Integer.parseInt(message), new Date());
                         logData("Heart Rate: " + String.valueOf(heartrateObject.getHeartrate()) + " Date: " + String.valueOf(heartrateObject.getTime()));
+
+                        updateData("Heart", String.valueOf(heartrateObject.getHeartrate()));
+
                         realmDBHandler.addToDB(heartrateObject);
 
                     } else {
@@ -263,7 +269,7 @@ public class WatchService extends SAAgentV2 {
             realm.executeTransaction(new Realm.Transaction() {
                 @Override
                 public void execute (Realm realm) {
-                    realm.createObject(HeartrateObject.class, UUID.randomUUID().toString());
+                    realm.copyToRealmOrUpdate(heartrate);
                 }
             });
         }
