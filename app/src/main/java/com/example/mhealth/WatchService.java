@@ -101,10 +101,10 @@ public class WatchService extends SAAgentV2 {
         if (result == SAAgentV2.CONNECTION_SUCCESS) {
             this.mConnectionHandler = (ServiceConnection) socket;
             Log.d("Watch Success","Connected");
-            sendData("Heart");
+            sendData("Exercise");
         } else if (result == SAAgentV2.CONNECTION_ALREADY_EXIST) {
             Log.d("Watch Success","Connected");
-            sendData("Heart");
+            sendData("Exercise");
         } else if (result == SAAgentV2.CONNECTION_DUPLICATE_REQUEST) {
             //Toast.makeText(mContext, "CONNECTION_DUPLICATE_REQUEST", Toast.LENGTH_LONG).show();
         } else {
@@ -149,7 +149,8 @@ public class WatchService extends SAAgentV2 {
         public void onReceive(int channelId, byte[] data) {
             final String message = new String(data);
             if (!receivedData) {
-                if (!message.equals("undefined")) {
+                logData ("Received data: " + message);
+                /*if (!message.equals("undefined")) {
                     if (!message.equals("Error getting data from watch.")) {
                         receivedData = true;
                         retryConnection = false;
@@ -186,8 +187,8 @@ public class WatchService extends SAAgentV2 {
                     }
                 } else {
                     logData ("Error getting data from watch, data undefined, retrying");
-                    sendData("Retry");
-                }
+                    //sendData("Retry");
+                }*/
             }
         }
 
@@ -265,6 +266,7 @@ public class WatchService extends SAAgentV2 {
         }
 
         public void addToDB (final HeartrateObject heartrate) {
+            Realm.init(getApplicationContext());
             Realm realm = Realm.getDefaultInstance();
             realm.executeTransaction(new Realm.Transaction() {
                 @Override

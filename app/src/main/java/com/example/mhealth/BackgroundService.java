@@ -116,7 +116,7 @@ public class BackgroundService extends Service {
                 }
 
                 // TODO: Remove this reassignment of the intervalCheck variable
-                //intervalCheck = "0";
+                intervalCheck = "0";
                 if (intervalCheck.equals("5") || intervalCheck.equals("0")) {
                     if (watchService != null) {
                         watchService.findPeers();
