@@ -47,6 +47,7 @@ public class WatchService extends SAAgentV2 {
     private Context mContext = null;
     private boolean receivedData = false;
     private boolean retryConnection = false;
+    private String sensorRequest;
 
     public WatchService(Context context) {
         super(TAG, context, SASOCKET_CLASS);
@@ -71,6 +72,14 @@ public class WatchService extends SAAgentV2 {
              * (release resources, stop Service threads, close UI thread, etc.)
              */
         }
+    }
+
+    public String getSensorRequest() {
+        return sensorRequest;
+    }
+
+    public void setSensorRequest(String sensorRequest) {
+        this.sensorRequest = sensorRequest;
     }
 
     @Override
@@ -101,10 +110,10 @@ public class WatchService extends SAAgentV2 {
         if (result == SAAgentV2.CONNECTION_SUCCESS) {
             this.mConnectionHandler = (ServiceConnection) socket;
             Log.d("Watch Success","Connected");
-            sendData("Exercise");
+            sendData(getSensorRequest());
         } else if (result == SAAgentV2.CONNECTION_ALREADY_EXIST) {
             Log.d("Watch Success","Connected");
-            sendData("Exercise");
+            sendData(getSensorRequest());
         } else if (result == SAAgentV2.CONNECTION_DUPLICATE_REQUEST) {
             //Toast.makeText(mContext, "CONNECTION_DUPLICATE_REQUEST", Toast.LENGTH_LONG).show();
         } else {
@@ -150,30 +159,33 @@ public class WatchService extends SAAgentV2 {
             final String message = new String(data);
             if (!receivedData) {
                 logData ("Received data: " + message);
-                /*if (!message.equals("undefined")) {
+                if (!message.equals("undefined")) {
                     if (!message.equals("Error getting data from watch.")) {
                         receivedData = true;
                         retryConnection = false;
                         JSONObject jsonObject = new JSONObject();
-                        try {
-                            jsonObject.put("userID", 200);
-                            jsonObject.put("heartbeat", Integer.parseInt(message));
-                            jsonObject.put("stepsTaken", 1200);
-                            jsonObject.put("caloriesBurned", 2200);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                        if (getSensorRequest().equals("Heart")) {
+                            try {
+                                jsonObject.put("userID", 200);
+                                jsonObject.put("heartbeat", Integer.parseInt(message));
+                                jsonObject.put("stepsTaken", 1200);
+                                jsonObject.put("caloriesBurned", 2200);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+
+                            httpHandler.postData(jsonObject);
+
+                            HeartrateObject heartrateObject = new HeartrateObject(Integer.parseInt(message), new Date());
+
+                            updateData("Heart", String.valueOf(heartrateObject.getHeartrate()));
+
+                            realmDBHandler.addToDB(heartrateObject);
+                        } else {
+
                         }
 
                         logData ("Received data: " + message);
-
-                        httpHandler.postData(jsonObject);
-
-                        HeartrateObject heartrateObject = new HeartrateObject(Integer.parseInt(message), new Date());
-                        logData("Heart Rate: " + String.valueOf(heartrateObject.getHeartrate()) + " Date: " + String.valueOf(heartrateObject.getTime()));
-
-                        updateData("Heart", String.valueOf(heartrateObject.getHeartrate()));
-
-                        realmDBHandler.addToDB(heartrateObject);
 
                     } else {
                         if (!retryConnection) {
@@ -187,8 +199,8 @@ public class WatchService extends SAAgentV2 {
                     }
                 } else {
                     logData ("Error getting data from watch, data undefined, retrying");
-                    //sendData("Retry");
-                }*/
+                    sendData("Retry");
+                }
             }
         }
 

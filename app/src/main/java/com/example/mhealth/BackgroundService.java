@@ -104,6 +104,7 @@ public class BackgroundService extends Service {
 
     private class QueryScheduler {
         private final int interval = 60000; // 1 Minute
+        private boolean checkExercise = false;
         private Handler schedulerHandler = new Handler();
         private Runnable runnable = new Runnable(){
             public void run() {
@@ -111,19 +112,26 @@ public class BackgroundService extends Service {
                 String intervalCheck;
                 if (currentMinutes < 10) {
                     intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(0));
+                    if (currentMinutes == 0) {
+                        checkExercise = true;
+                    }
                 } else {
                     intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(1));
                 }
 
                 // TODO: Remove this reassignment of the intervalCheck variable
-                intervalCheck = "0";
+                //intervalCheck = "0";
                 if (intervalCheck.equals("5") || intervalCheck.equals("0")) {
                     if (watchService != null) {
+                        if (checkExercise) {
+                            watchService.setSensorRequest("Exercise");
+                        } else {
+                            watchService.setSensorRequest("Heart");
+                        }
                         watchService.findPeers();
                     }  else {
                         logData("WatchServiceAgent is null");
                     }
-
                 }
                 schedulerHandler.postAtTime(runnable, System.currentTimeMillis()+interval);
                 schedulerHandler.postDelayed(runnable, interval);
