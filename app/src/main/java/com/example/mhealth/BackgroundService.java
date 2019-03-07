@@ -39,6 +39,7 @@ public class BackgroundService extends Service {
         public void onAgentAvailable(SAAgentV2 agent) {
             Log.d("Agent Initialized", "Agent has been successfully initialized");
             watchService = (WatchService) agent;
+            watchService.sendData("Init");
             QueryScheduler queryScheduler = new QueryScheduler();
             queryScheduler.startScheduler();
         }
@@ -116,23 +117,28 @@ public class BackgroundService extends Service {
                         checkExercise = true;
                     }
                 } else {
+                    if (currentMinutes == 30) {
+                        checkExercise = true;
+                    }
                     intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(1));
                 }
 
-                // TODO: Remove this reassignment of the intervalCheck variable
-                //intervalCheck = "0";
                 if (intervalCheck.equals("5") || intervalCheck.equals("0")) {
                     if (watchService != null) {
                         if (checkExercise) {
                             watchService.setSensorRequest("Exercise");
+                            checkExercise = false;
                         } else {
                             watchService.setSensorRequest("Heart");
                         }
-                        watchService.findPeers();
                     }  else {
                         logData("WatchServiceAgent is null");
                     }
+                } else {
+                    watchService.setSensorRequest("Sleep");
                 }
+                watchService.findPeers();
+
                 schedulerHandler.postAtTime(runnable, System.currentTimeMillis()+interval);
                 schedulerHandler.postDelayed(runnable, interval);
             }

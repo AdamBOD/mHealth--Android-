@@ -12,7 +12,7 @@ public class ExerciseObject extends RealmObject {
 
     public ExerciseObject () {}
 
-    public ExerciseObject (int steps, int minutesActive, int caloriesBurned, Date date) {
+    public ExerciseObject (int steps, int caloriesBurned, Date date) {
         this.steps = steps;
         this.minutesActive = minutesActive;
         this.caloriesBurned = caloriesBurned;

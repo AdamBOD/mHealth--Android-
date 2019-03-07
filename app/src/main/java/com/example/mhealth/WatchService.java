@@ -49,6 +49,10 @@ public class WatchService extends SAAgentV2 {
     private boolean retryConnection = false;
     private String sensorRequest;
 
+    private String lastSleepStatus;
+    private int lastSleepTimestamp;
+
+
     public WatchService(Context context) {
         super(TAG, context, SASOCKET_CLASS);
         mContext = context;
@@ -111,9 +115,11 @@ public class WatchService extends SAAgentV2 {
             this.mConnectionHandler = (ServiceConnection) socket;
             Log.d("Watch Success","Connected");
             sendData(getSensorRequest());
+            //sendData("Sleep");
         } else if (result == SAAgentV2.CONNECTION_ALREADY_EXIST) {
             Log.d("Watch Success","Connected");
             sendData(getSensorRequest());
+            //sendData("Sleep");
         } else if (result == SAAgentV2.CONNECTION_DUPLICATE_REQUEST) {
             //Toast.makeText(mContext, "CONNECTION_DUPLICATE_REQUEST", Toast.LENGTH_LONG).show();
         } else {
@@ -157,14 +163,18 @@ public class WatchService extends SAAgentV2 {
         @Override
         public void onReceive(int channelId, byte[] data) {
             final String message = new String(data);
+
+            logData ("Received data: " + message);
+
             if (!receivedData) {
-                logData ("Received data: " + message);
                 if (!message.equals("undefined")) {
                     if (!message.equals("Error getting data from watch.")) {
                         receivedData = true;
                         retryConnection = false;
-                        JSONObject jsonObject = new JSONObject();
+                        JSONObject jsonObject;
+
                         if (getSensorRequest().equals("Heart")) {
+                            jsonObject = new JSONObject();
                             try {
                                 jsonObject.put("userID", 200);
                                 jsonObject.put("heartbeat", Integer.parseInt(message));
@@ -181,12 +191,50 @@ public class WatchService extends SAAgentV2 {
                             updateData("Heart", String.valueOf(heartrateObject.getHeartrate()));
 
                             realmDBHandler.addToDB(heartrateObject);
-                        } else {
+                        } else if (getSensorRequest().equals("Exercise")) {
+                            try {
+                                 jsonObject = new JSONObject(message);
 
+                                ExerciseObject exerciseObject = new ExerciseObject(
+                                        Integer.parseInt(jsonObject.getJSONObject("stepCount").toString()),
+                                        Integer.parseInt(jsonObject.getJSONObject("calories").toString()),
+                                        new Date());
+
+                                updateData("Steps", String.valueOf(exerciseObject.getSteps()));
+
+                                realmDBHandler.addToDB(exerciseObject);
+                            } catch (JSONException e) {
+                                logData("Error converting Exercise data to JSON object (" + e.getMessage() + ")");
+                                e.printStackTrace();
+                            }
+                        } else if (getSensorRequest().equals("Sleep")) {
+                            try {
+                                jsonObject = new JSONObject(message);
+
+                                String currentStatus = jsonObject.getJSONObject("status").toString();
+
+                                if (!lastSleepStatus.equals(currentStatus)) {
+                                    if (lastSleepStatus.equals("ASLEEP")) {
+                                        int duration = (Integer.parseInt(
+                                                jsonObject.getJSONObject("timestamp").toString()
+                                        ) - lastSleepTimestamp) / 60;
+
+                                        SleepObject sleepObject = new SleepObject(duration, new Date());
+                                        updateData("Sleep", String.valueOf(sleepObject.getDuration()));
+                                        realmDBHandler.addToDB(sleepObject);
+                                    } else if (lastSleepStatus.equals("AWAKE")) {
+                                        lastSleepStatus = currentStatus;
+                                        lastSleepTimestamp = Integer.parseInt(
+                                                jsonObject.getJSONObject("timestamp").toString());
+                                    } else {
+                                        logData("Error getting Sleep data");
+                                    }
+                                }
+                            } catch (JSONException e) {
+                                logData("Error converting Sleep data to JSON object (" + e.getMessage() + ")");
+                                e.printStackTrace();
+                            }
                         }
-
-                        logData ("Received data: " + message);
-
                     } else {
                         if (!retryConnection) {
                             retryConnection = true;
@@ -225,7 +273,7 @@ public class WatchService extends SAAgentV2 {
         if (mConnectionHandler != null) {
             try {
                 mConnectionHandler.send(WATCH_CHANNEL_ID, data.getBytes());
-                logData ("Querying Watch");
+                logData("Querying: " + getSensorRequest());
                 receivedData = false;
                 retvalue = true;
             } catch (IOException e) {
