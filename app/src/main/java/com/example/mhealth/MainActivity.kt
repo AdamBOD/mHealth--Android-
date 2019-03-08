@@ -1,6 +1,7 @@
 package com.example.mhealth
 
 import android.app.Service
+import android.content.ComponentName
 import android.os.Bundle
 import android.support.design.widget.BottomNavigationView
 import android.support.v4.app.Fragment
@@ -9,6 +10,9 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
+import android.util.Log
 import android.widget.Toast
 import com.androidnetworking.AndroidNetworking
 import com.example.mhealth.BackgroundService.logData
@@ -25,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private val stepsFragment = StepsFragment.newInstance()
     private val caloriesFragment = CaloriesFragment.newInstance()
     private val sleepFragment = SleepFragment.newInstance()
+    private var backgroundService: BackgroundService? = null
 
     private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
         when (item.itemId) {
@@ -59,6 +64,7 @@ class MainActivity : AppCompatActivity() {
         if (!BackgroundService.serviceRunning) {
             val intent = Intent(this, BackgroundService::class.java)
             startService(intent)
+            bindService(intent, serviceConnection, BIND_AUTO_CREATE);
         }
 
         setContentView(R.layout.activity_main)
@@ -84,6 +90,18 @@ class MainActivity : AppCompatActivity() {
 
         logData ("Started App")
         AndroidNetworking.initialize(getApplicationContext());
+    }
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName,
+                                        service: IBinder) {
+            val binder = service as BackgroundService.LocalBinder
+            backgroundService = binder.getService()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName) {
+            //isBound = false
+        }
     }
 
     override fun onDestroy() {

@@ -166,7 +166,7 @@ public class WatchService extends SAAgentV2 {
                 return;
             }
             String message = new String(data);
-
+            //TODO - Break up this function into separate handlers
             if (!receivedData) {
                 logData ("Received data: " + message);
                 if (!message.equals("undefined")) {
@@ -215,7 +215,7 @@ public class WatchService extends SAAgentV2 {
                                 if (!lastSleepStatus.equals(currentStatus)) {
                                     if (lastSleepStatus.equals("ASLEEP")) {
                                         long duration = (sleepData.getTimestamp() - lastSleepTimestamp) / 60;
-
+                                        logData(String.valueOf(duration));
                                         SleepObject sleepObject = new SleepObject(Math.toIntExact(duration), new Date());
                                         updateData("Sleep", String.valueOf(sleepObject.getDuration()));
                                         realmDBHandler.addToDB(sleepObject);
@@ -226,6 +226,8 @@ public class WatchService extends SAAgentV2 {
                                         logData("Error getting Sleep data");
                                     }
                                 }
+                                lastSleepStatus = currentStatus;
+                            } else {
                                 lastSleepStatus = currentStatus;
                             }
 
