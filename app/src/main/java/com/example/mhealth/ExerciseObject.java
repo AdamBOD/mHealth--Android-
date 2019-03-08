@@ -6,15 +6,13 @@ import io.realm.RealmObject;
 
 public class ExerciseObject extends RealmObject {
     private int steps;
-    private int minutesActive;
-    private int caloriesBurned;
+    private double caloriesBurned;
     private Date date;
 
     public ExerciseObject () {}
 
-    public ExerciseObject (int steps, int caloriesBurned, Date date) {
+    public ExerciseObject (int steps, double caloriesBurned, Date date) {
         this.steps = steps;
-        this.minutesActive = minutesActive;
         this.caloriesBurned = caloriesBurned;
         this.date = date;
     }
@@ -27,15 +25,7 @@ public class ExerciseObject extends RealmObject {
         this.steps = steps;
     }
 
-    public int getMinutesActive() {
-        return minutesActive;
-    }
-
-    public void setMinutesActive(int minutesActive) {
-        this.minutesActive = minutesActive;
-    }
-
-    public int getCaloriesBurned() {
+    public double getCaloriesBurned() {
         return caloriesBurned;
     }
 

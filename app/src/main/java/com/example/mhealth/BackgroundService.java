@@ -111,33 +111,38 @@ public class BackgroundService extends Service {
             public void run() {
                 int currentMinutes = Calendar.getInstance().getTime().getMinutes();
                 String intervalCheck;
-                if (currentMinutes < 10) {
-                    intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(0));
-                    if (currentMinutes == 0) {
-                        checkExercise = true;
-                    }
-                } else {
-                    if (currentMinutes == 30) {
-                        checkExercise = true;
-                    }
-                    intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(1));
-                }
 
-                if (intervalCheck.equals("5") || intervalCheck.equals("0")) {
-                    if (watchService != null) {
-                        if (checkExercise) {
-                            watchService.setSensorRequest("Exercise");
-                            checkExercise = false;
-                        } else {
-                            watchService.setSensorRequest("Heart");
+                if (watchService != null) {
+                    if (currentMinutes < 10) {
+                        intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(0));
+                        if (currentMinutes == 0) {
+                            checkExercise = true;
                         }
-                    }  else {
-                        logData("WatchServiceAgent is null");
+                    } else {
+                        if (currentMinutes == 30) {
+                            checkExercise = true;
+                        }
+                        intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(1));
                     }
-                } else {
-                    watchService.setSensorRequest("Sleep");
+
+                    if (intervalCheck.equals("5") || intervalCheck.equals("0")) {
+
+                            if (checkExercise) {
+                                watchService.setSensorRequest("Exercise");
+                                watchService.findPeers();
+                                checkExercise = false;
+                            } else {
+                                watchService.setSensorRequest("Heart");
+                                watchService.findPeers();
+                            }
+
+                    } else if (intervalCheck.equals("3") || intervalCheck.equals("8")){
+                        watchService.setSensorRequest("Sleep");
+                        watchService.findPeers();
+                    }
+                }  else {
+                    logData("WatchServiceAgent is null");
                 }
-                watchService.findPeers();
 
                 schedulerHandler.postAtTime(runnable, System.currentTimeMillis()+interval);
                 schedulerHandler.postDelayed(runnable, interval);
