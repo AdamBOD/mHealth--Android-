@@ -5,18 +5,11 @@ that samsung packages with their Samsung Accessory Protocol SDK
 
 package com.example.mhealth;
 
-import java.io.IOException;
-import java.util.Date;
-import java.util.UUID;
-
 import android.content.Context;
-import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.androidnetworking.AndroidNetworking;
 import com.androidnetworking.common.Priority;
@@ -32,6 +25,9 @@ import com.samsung.android.sdk.accessory.SASocket;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.Date;
 
 import androidx.annotation.RequiresApi;
 import io.realm.Realm;
@@ -118,11 +114,9 @@ public class WatchService extends SAAgentV2 {
             this.mConnectionHandler = (ServiceConnection) socket;
             Log.d("Watch Success","Connected");
             sendData(getSensorRequest());
-            //sendData("Sleep");
         } else if (result == SAAgentV2.CONNECTION_ALREADY_EXIST) {
             Log.d("Watch Success","Connected");
             sendData(getSensorRequest());
-            //sendData("Sleep");
         } else if (result == SAAgentV2.CONNECTION_DUPLICATE_REQUEST) {
             //Toast.makeText(mContext, "CONNECTION_DUPLICATE_REQUEST", Toast.LENGTH_LONG).show();
         } else {
@@ -183,9 +177,10 @@ public class WatchService extends SAAgentV2 {
 
                         if (getSensorRequest().equals("Heart")) {
                             jsonObject = new JSONObject();
+                            int averageHeartRate = Integer.parseInt(message);
                             try {
                                 jsonObject.put("userID", 200);
-                                jsonObject.put("heartbeat", Integer.parseInt(message));
+                                jsonObject.put("heartbeat", averageHeartRate);
                                 jsonObject.put("stepsTaken", 1200);
                                 jsonObject.put("caloriesBurned", 2200);
                             } catch (JSONException e) {
@@ -270,7 +265,7 @@ public class WatchService extends SAAgentV2 {
 
     public boolean sendData(final String data) {
         boolean retvalue = false;
-        if (mConnectionHandler != null) {
+        if (mConnectionHandler != null && data != null) {
             try {
                 mConnectionHandler.send(WATCH_CHANNEL_ID, data.getBytes());
                 logData("Querying: " + getSensorRequest());
