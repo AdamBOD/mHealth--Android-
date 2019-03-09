@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
+import io.realm.exceptions.RealmError;
+import io.realm.exceptions.RealmException;
 
 public class BackgroundService extends Service {
     public static boolean serviceRunning = false;
@@ -62,9 +64,6 @@ public class BackgroundService extends Service {
     @Override
     public void onCreate () {
         SAAgentV2.requestAgent(getApplicationContext(), WatchService.class.getName(), watchAgentCallback);
-
-        Realm.init(getApplicationContext());
-        Realm realm = Realm.getDefaultInstance();
     }
 
     @Override
@@ -93,7 +92,6 @@ public class BackgroundService extends Service {
 
     @Override
     public void onDestroy() {
-        // Clean up connections
         if (watchService != null) {
             watchService.releaseAgent();
             watchService = null;
@@ -110,21 +108,31 @@ public class BackgroundService extends Service {
                 .name("mHealth.realm")
                 .schemaVersion(0)
                 .build();
+        Realm.setDefaultConfiguration(realmConfiguration);
         Realm realm = Realm.getDefaultInstance();
 
-        HeartrateObject heartrateObject = realm.where(HeartrateObject.class).sort("time").findAll().last();
-        heartrate = heartrateObject.getHeartrate();
-        broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
+        try {
+            HeartrateObject heartrateObject = realm.where(HeartrateObject.class).sort("time").findAll().last();
+            heartrate = heartrateObject.getHeartrate();
+            broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
 
-        ExerciseObject exerciseObject = realm.where(ExerciseObject.class).sort("date").findAll().last();
-        stepsTaken = exerciseObject.getSteps();
-        caloriesBurned = (int) exerciseObject.getCaloriesBurned();
-        broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
-        broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
+            ExerciseObject exerciseObject = realm.where(ExerciseObject.class).sort("date").findAll().last();
+            stepsTaken = exerciseObject.getSteps();
+            caloriesBurned = (int) exerciseObject.getCaloriesBurned();
+            broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
+            broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
 
-        SleepObject sleepObject = realm.where(SleepObject.class).sort("date").findAll().last();
-        sleep = sleepObject.getDuration();
-        broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
+            SleepObject sleepObject = realm.where(SleepObject.class).sort("date").findAll().last();
+            sleep = sleepObject.getDuration();
+            broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
+        } catch (RuntimeException err) {
+            logData ("No Realm data");
+            broadcaster.sendContentUpdate("Heart", "0");
+            broadcaster.sendContentUpdate("Steps", "0");
+            broadcaster.sendContentUpdate("Calories", "0");
+            broadcaster.sendContentUpdate("Sleep", "None");
+        }
+        realm.close();
     }
 
     public static void updateAppState (Boolean appState) {

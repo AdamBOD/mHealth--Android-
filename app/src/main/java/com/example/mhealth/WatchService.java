@@ -33,6 +33,7 @@ import java.util.Date;
 
 import androidx.annotation.RequiresApi;
 import io.realm.Realm;
+import io.realm.RealmConfiguration;
 
 import static com.example.mhealth.BackgroundService.logData;
 import static com.example.mhealth.BackgroundService.updateData;
@@ -164,7 +165,7 @@ public class WatchService extends SAAgentV2 {
         public void onError(int channelId, String errorMessage, int errorCode) {
         }
 
-        @RequiresApi(api = Build.VERSION_CODES.N)
+        //@RequiresApi(api = Build.VERSION_CODES.N)
         @Override
         public void onReceive(int channelId, byte[] data) {
             if (data == null) {
@@ -222,7 +223,7 @@ public class WatchService extends SAAgentV2 {
 
                             updateData("Steps", String.valueOf(exerciseObject.getSteps()));
 
-                            if (addObject) {
+                            if (addObject || exerciseObjectID == null) {
                                 exerciseObjectID = exerciseObject.getUID();
                                 realmDBHandler.addToDB(exerciseObject);
                             } else {
@@ -341,13 +342,23 @@ public class WatchService extends SAAgentV2 {
         public RealmDBHandler () {}
 
         public void prepareRealmDB () {
-            /*RealmConfiguration realmConfig = new RealmConfiguration.Builder()
+            Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
                     .name("mHealth.realm")
-                    .build();*/
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
         }
 
         public void addToDB (final HeartrateObject heartrate) {
             Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
             Realm realm = Realm.getDefaultInstance();
             realm.executeTransaction(new Realm.Transaction() {
                 @Override
@@ -355,10 +366,17 @@ public class WatchService extends SAAgentV2 {
                     realm.copyToRealmOrUpdate(heartrate);
                 }
             });
+            realm.close();
         }
 
         public void addToDB (final SleepObject sleepData) {
             Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
             Realm realm = Realm.getDefaultInstance();
             realm.executeTransaction(new Realm.Transaction() {
                 @Override
@@ -366,10 +384,17 @@ public class WatchService extends SAAgentV2 {
                     realm.copyToRealmOrUpdate(sleepData);
                 }
             });
+            realm.close();
         }
 
         public void addToDB (final ExerciseObject exerciseData) {
             Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
             Realm realm = Realm.getDefaultInstance();
             realm.executeTransaction(new Realm.Transaction() {
                 @Override
@@ -377,6 +402,7 @@ public class WatchService extends SAAgentV2 {
                     realm.insertOrUpdate(exerciseData);
                 }
             });
+            realm.close();
         }
     }
 
