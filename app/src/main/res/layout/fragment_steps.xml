@@ -6,12 +6,8 @@
     tools:context=".StepsFragment">
 
     <com.github.mikephil.charting.charts.LineChart
-        android:id="@+id/chart"
+        android:id="@+id/steps_Chart"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="Steps Test"/>
+        android:layout_height="250dp" />
 
 </FrameLayout>

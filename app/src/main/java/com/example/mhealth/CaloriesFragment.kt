@@ -1,12 +1,22 @@
 package com.example.mhealth
 
 import android.content.Context
+import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
+import com.github.mikephil.charting.components.LimitLine
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import kotlinx.android.synthetic.main.fragment_calories.*
+import java.util.concurrent.ThreadLocalRandom
 
 /**
  * A simple [Fragment] subclass.
@@ -27,6 +37,56 @@ class CaloriesFragment : Fragment() {
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_calories, container, false)
+    }
+    
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        createChart()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    private fun createChart () {
+        val values = ArrayList<Entry>()
+        for (i in 0..50) {
+            values.add(Entry(i.toFloat(), ThreadLocalRandom.current().nextInt(20, 500 + 1).toFloat()))
+        }
+        val lineData = LineDataSet (values, "Calories Burned")
+        lineData.fillColor = Color.parseColor("#1976D2")
+        lineData.color = Color.parseColor("#1976D2")
+        lineData.lineWidth = 2f
+        lineData.setDrawFilled(true)
+        val drawable = context?.let { ContextCompat.getDrawable(it, R.drawable.chart_background) }
+        lineData.fillDrawable = drawable
+        lineData.valueTextSize = 0f
+        lineData.setDrawValues(false)
+        lineData.setDrawCircles(false)
+
+        calories_Chart.data = LineData(lineData)
+        calories_Chart.setDrawGridBackground(false)
+        calories_Chart.setDrawBorders(false)
+        calories_Chart.setDrawMarkers(false)
+        calories_Chart.disableScroll()
+        calories_Chart.axisLeft.axisMinimum = 0f //TODO - Average minus certain amount
+        calories_Chart.xAxis.isEnabled = false
+        calories_Chart.axisLeft.isEnabled = true
+        calories_Chart.axisRight.isEnabled = false
+        calories_Chart.description.text = ""
+        calories_Chart.legend.isEnabled = false
+
+        calories_Chart.axisLeft.setDrawAxisLine(false)
+        calories_Chart.axisLeft.setDrawGridLines(false)
+        calories_Chart.axisLeft.setDrawLabels(false)
+
+        val averageLimit = LimitLine(260f, "Target")
+        averageLimit.lineWidth = 4f
+        averageLimit.lineColor = Color.parseColor("#9E9E9E")
+        averageLimit.enableDashedLine(30f, 10f, 0f)
+        averageLimit.labelPosition = LimitLine.LimitLabelPosition.RIGHT_BOTTOM
+        averageLimit.textSize = 15f
+
+        calories_Chart.axisLeft.limitLines.add(0, averageLimit)
+        calories_Chart.axisLeft.setDrawLimitLinesBehindData(true)
     }
 
     /**
