@@ -118,7 +118,7 @@ public class BackgroundService extends Service {
 
             ExerciseObject exerciseObject = realm.where(ExerciseObject.class).sort("date").findAll().last();
             stepsTaken = exerciseObject.getSteps();
-            caloriesBurned = (int) exerciseObject.getCaloriesBurned();
+            caloriesBurned = (int) Math.round(exerciseObject.getCaloriesBurned());
             broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
             broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
 
@@ -127,10 +127,10 @@ public class BackgroundService extends Service {
             broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
         } catch (RuntimeException err) {
             logData ("No Realm data");
-            broadcaster.sendContentUpdate("Heart", "0");
-            broadcaster.sendContentUpdate("Steps", "0");
-            broadcaster.sendContentUpdate("Calories", "0");
-            broadcaster.sendContentUpdate("Sleep", "None");
+            broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
+            broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
+            broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
+            broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
         }
         realm.close();
     }
@@ -184,6 +184,8 @@ public class BackgroundService extends Service {
                             if (currentHours == 0) {
                                 watchService.setSensorRequest("Reset");
                                 watchService.findPeers();
+
+                                compileDailyData();
                             }
                         }
                     } else {
@@ -224,6 +226,10 @@ public class BackgroundService extends Service {
                 logData("WatchServiceAgent is null");
                 watchService.findPeers();
             }
+        }
+
+        private void compileDailyData () {
+
         }
     }
     static void logData (String message) {

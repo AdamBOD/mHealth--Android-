@@ -7,6 +7,10 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import kotlinx.android.synthetic.main.fragment_heart.*
 
 /**
  * A simple [Fragment] subclass.
@@ -26,7 +30,19 @@ class HeartFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
+        createChart()
         return inflater.inflate(R.layout.fragment_heart, container, false)
+    }
+
+    private fun createChart () {
+        val values = ArrayList<Entry>()
+        for (i in 0..50) {
+            val entry = Entry ()
+            values.add(Entry(i.toFloat(), Math.random().toFloat()))
+        }
+        val lineData = LineDataSet (values, "Heart Rate")
+
+        heart_Chart.data = LineData(lineData);
     }
 
     /**

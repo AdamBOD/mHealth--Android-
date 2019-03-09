@@ -183,10 +183,13 @@ public class WatchService extends SAAgentV2 {
                         retryConnection = false;
                         JsonObject receivedObject = new JsonParser().parse(message).getAsJsonObject();
                         logData(receivedObject.toString());
-                        String sentType = receivedObject.get("type").getAsString();
-                        if (sentType == null) {
+
+                        if (message.equals("{}")) {
                             return;
                         }
+
+                        String sentType = receivedObject.get("type").getAsString();
+
                         if (sentType.equals("Heart")) {
                             JSONObject healthData = new JSONObject();
                             int averageHeartRate = receivedObject.get("heartrate").getAsInt();
@@ -222,6 +225,7 @@ public class WatchService extends SAAgentV2 {
                                     new Date());
 
                             updateData("Steps", String.valueOf(exerciseObject.getSteps()));
+                            updateData("Calories", String.valueOf(exerciseObject.getCaloriesBurned()));
 
                             if (addObject || exerciseObjectID == null) {
                                 exerciseObjectID = exerciseObject.getUID();
@@ -260,14 +264,17 @@ public class WatchService extends SAAgentV2 {
                     } else {
                         if (!retryConnection) {
                             retryConnection = true;
+                            receivedData = true;
                             logData ("Error getting data from watch, trying again");
-                            sendData("Heart");
+                            sendData("Retry");
                         } else {
                             retryConnection = false;
+                            receivedData = true;
                             logData ("Error getting data from watch, terminating");
                         }
                     }
                 } else {
+                    receivedData = true;
                     logData ("Error getting data from watch, data undefined, retrying");
                     sendData("Retry");
                 }
