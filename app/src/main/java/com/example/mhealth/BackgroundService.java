@@ -62,29 +62,8 @@ public class BackgroundService extends Service {
     public void onCreate () {
         SAAgentV2.requestAgent(getApplicationContext(), WatchService.class.getName(), watchAgentCallback);
 
-        final HeartrateObject heartData = new HeartrateObject(65, new Date());
-        final ExerciseObject exerciseData = new ExerciseObject(1200, 250, new Date());
-        final SleepObject sleepData = new SleepObject(41340000, new Date());
         Realm.init(getApplicationContext());
         Realm realm = Realm.getDefaultInstance();
-        realm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute (Realm realm) {
-                realm.copyToRealmOrUpdate(heartData);
-            }
-        });
-        realm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute (Realm realm) {
-                realm.copyToRealmOrUpdate(exerciseData);
-            }
-        });
-        realm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute (Realm realm) {
-                realm.copyToRealmOrUpdate(sleepData);
-            }
-        });
     }
 
     @Override
