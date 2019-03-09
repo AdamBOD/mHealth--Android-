@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
+import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
 public class BackgroundService extends Service {
@@ -104,6 +105,11 @@ public class BackgroundService extends Service {
 
     public void getTileData () {
         Realm.init(getApplicationContext());
+        RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                .deleteRealmIfMigrationNeeded()
+                .name("mHealth.realm")
+                .schemaVersion(0)
+                .build();
         Realm realm = Realm.getDefaultInstance();
 
         HeartrateObject heartrateObject = realm.where(HeartrateObject.class).sort("time").findAll().last();
@@ -157,6 +163,7 @@ public class BackgroundService extends Service {
         private Handler schedulerHandler = new Handler();
         private Runnable runnable = new Runnable(){
             public void run() {
+                int currentHours = Calendar.getInstance().getTime().getHours();
                 int currentMinutes = Calendar.getInstance().getTime().getMinutes();
                 String intervalCheck;
 
@@ -165,6 +172,11 @@ public class BackgroundService extends Service {
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(0));
                         if (currentMinutes == 0) {
                             checkExercise = true;
+                        } else if (currentMinutes == 1) {
+                            if (currentHours == 0) {
+                                watchService.setSensorRequest("Reset");
+                                watchService.findPeers();
+                            }
                         }
                     } else {
                         if (currentMinutes == 30) {
@@ -174,7 +186,6 @@ public class BackgroundService extends Service {
                     }
 
                     if (intervalCheck.equals("5") || intervalCheck.equals("0")) {
-
                             if (checkExercise) {
                                 watchService.setSensorRequest("Exercise");
                                 watchService.findPeers();

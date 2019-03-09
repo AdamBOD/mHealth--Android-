@@ -16,6 +16,8 @@ import com.androidnetworking.common.Priority;
 import com.androidnetworking.error.ANError;
 import com.androidnetworking.interfaces.JSONArrayRequestListener;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.samsung.android.sdk.SsdkUnsupportedException;
 import com.samsung.android.sdk.accessory.SA;
 import com.samsung.android.sdk.accessory.SAAgentV2;
@@ -48,8 +50,13 @@ public class WatchService extends SAAgentV2 {
     private boolean retryConnection = false;
     private String sensorRequest;
 
+    private int lastStepCount;
+    private double lastCalories;
+    private String exerciseObjectID;
+
     private String lastSleepStatus;
     private long lastSleepTimestamp;
+
 
 
     public WatchService(Context context) {
@@ -173,40 +180,57 @@ public class WatchService extends SAAgentV2 {
                     if (!message.equals("Error getting data from watch.")) {
                         receivedData = true;
                         retryConnection = false;
-                        JSONObject jsonObject;
-
-                        if (getSensorRequest().equals("Heart")) {
-                            jsonObject = new JSONObject();
-                            int averageHeartRate = Integer.parseInt(message);
+                        JsonObject receivedObject = new JsonParser().parse(message).getAsJsonObject();
+                        logData(receivedObject.toString());
+                        String sentType = receivedObject.get("type").getAsString();
+                        if (sentType == null) {
+                            return;
+                        }
+                        if (sentType.equals("Heart")) {
+                            JSONObject healthData = new JSONObject();
+                            int averageHeartRate = receivedObject.get("heartrate").getAsInt();
                             try {
-                                jsonObject.put("userID", 200);
-                                jsonObject.put("heartbeat", averageHeartRate);
-                                jsonObject.put("stepsTaken", 1200);
-                                jsonObject.put("caloriesBurned", 2200);
+                                healthData.put("userID", 200);
+                                healthData.put("heartbeat", averageHeartRate);
+                                healthData.put("stepsTaken", 1200);
+                                healthData.put("caloriesBurned", 2200);
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
 
-                            httpHandler.postData(jsonObject);
+                            httpHandler.postData(healthData);
 
-                            HeartrateObject heartrateObject = new HeartrateObject(Integer.parseInt(message), new Date());
+                            HeartrateObject heartrateObject = new HeartrateObject(averageHeartRate, new Date());
 
                             updateData("Heart", String.valueOf(heartrateObject.getHeartrate()));
 
                             realmDBHandler.addToDB(heartrateObject);
-                        } else if (getSensorRequest().equals("Exercise")) {
+                        } else if (sentType.equals("Exercise")) {
                             Gson g = new Gson();
                             ExerciseData exerciseData = g.fromJson(message, ExerciseData.class);
+                            boolean addObject = false;
+                            if (exerciseData.getStepCount() < lastStepCount) {
+                                addObject = true;
+                            }
+                            lastStepCount = (int) exerciseData.getStepCount();
+                            lastCalories = exerciseData.getCalories();
 
                             ExerciseObject exerciseObject = new ExerciseObject(
-                                    exerciseData.getStepCount(),
-                                    exerciseData.getCalories(),
+                                    lastStepCount,
+                                    lastCalories,
                                     new Date());
 
                             updateData("Steps", String.valueOf(exerciseObject.getSteps()));
 
-                            realmDBHandler.addToDB(exerciseObject);
-                        } else if (getSensorRequest().equals("Sleep")) {
+                            if (addObject) {
+                                exerciseObjectID = exerciseObject.getUID();
+                                realmDBHandler.addToDB(exerciseObject);
+                            } else {
+                                exerciseObject.setUID(exerciseObjectID);
+                                realmDBHandler.addToDB(exerciseObject);
+                            }
+
+                        } else if (sentType.equals("Sleep")) {
                             Gson g = new Gson();
                             SleepData sleepData = g.fromJson(message, SleepData.class);
                             String currentStatus = sleepData.getStatus();
@@ -216,7 +240,7 @@ public class WatchService extends SAAgentV2 {
                                     if (lastSleepStatus.equals("ASLEEP")) {
                                         long duration = (sleepData.getTimestamp() - lastSleepTimestamp) / 60;
                                         logData(String.valueOf(duration));
-                                        SleepObject sleepObject = new SleepObject(Math.toIntExact(duration), new Date());
+                                        SleepObject sleepObject = new SleepObject(duration, new Date());
                                         updateData("Sleep", String.valueOf(sleepObject.getDuration()));
                                         realmDBHandler.addToDB(sleepObject);
                                     } else if (lastSleepStatus.equals("AWAKE")) {
@@ -350,7 +374,7 @@ public class WatchService extends SAAgentV2 {
             realm.executeTransaction(new Realm.Transaction() {
                 @Override
                 public void execute (Realm realm) {
-                    realm.copyToRealmOrUpdate(exerciseData);
+                    realm.insertOrUpdate(exerciseData);
                 }
             });
         }
@@ -381,14 +405,49 @@ public class WatchService extends SAAgentV2 {
         }
     }
 
+    class HeartData {
+        private String type;
+        private int heartrate;
+
+        public HeartData (String type, int heartrate) {
+            this.type = type;
+            this.heartrate = heartrate;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public int getHeartrate() {
+            return heartrate;
+        }
+
+        public void setHeartrate(int heartrate) {
+            this.heartrate = heartrate;
+        }
+    }
+
     class SleepData {
+        private String type;
         private String status;
         private long timestamp;
 
-        public SleepData (String status, int timestamp) {
-            logData (status);
+        public SleepData (String type, String status, int timestamp) {
+            this.type = type;
             this.status = status;
             this.timestamp = timestamp;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
         }
 
         public String getStatus() {
@@ -409,21 +468,31 @@ public class WatchService extends SAAgentV2 {
     }
 
     class ExerciseData {
-        private int stepCount;
+        private String type;
+        private long stepCount;
         private double calories;
         private double frequency;
 
-        public ExerciseData (int stepCount, double calories, double frequency) {
+        public ExerciseData (String type, long stepCount, double calories, double frequency) {
+            this.type = type;
             this.stepCount = stepCount;
             this.calories = calories;
             this.frequency = frequency;
         }
 
-        public int getStepCount() {
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public long getStepCount() {
             return stepCount;
         }
 
-        public void setStepCount(int stepCount) {
+        public void setStepCount(long stepCount) {
             this.stepCount = stepCount;
         }
 
