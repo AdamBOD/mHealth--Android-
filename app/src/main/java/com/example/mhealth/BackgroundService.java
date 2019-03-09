@@ -21,6 +21,10 @@ import org.json.JSONObject;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
+import io.realm.Realm;
+import io.realm.RealmResults;
 
 public class BackgroundService extends Service {
     public static boolean serviceRunning = false;
@@ -31,9 +35,9 @@ public class BackgroundService extends Service {
     private static Boolean appInForeground = false;
 
     private static int heartrate = 0;
-    private static int footSteps = 0;
+    private static int stepsTaken = 0;
     private static int caloriesBurned = 0;
-    private static int sleep = 0;
+    private static long sleep = 0;
 
     private SAAgentV2.RequestAgentCallback watchAgentCallback = new SAAgentV2.RequestAgentCallback() {
         @Override
@@ -57,13 +61,37 @@ public class BackgroundService extends Service {
     @Override
     public void onCreate () {
         SAAgentV2.requestAgent(getApplicationContext(), WatchService.class.getName(), watchAgentCallback);
+
+        final HeartrateObject heartData = new HeartrateObject(65, new Date());
+        final ExerciseObject exerciseData = new ExerciseObject(1200, 250, new Date());
+        final SleepObject sleepData = new SleepObject(41340000, new Date());
+        Realm.init(getApplicationContext());
+        Realm realm = Realm.getDefaultInstance();
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute (Realm realm) {
+                realm.copyToRealmOrUpdate(heartData);
+            }
+        });
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute (Realm realm) {
+                realm.copyToRealmOrUpdate(exerciseData);
+            }
+        });
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute (Realm realm) {
+                realm.copyToRealmOrUpdate(sleepData);
+            }
+        });
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         logData("Background Service Started");
         broadcaster = new Broadcaster();
-        broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
+        getTileData();
         serviceRunning = true;
         return START_STICKY;
     }
@@ -95,15 +123,46 @@ public class BackgroundService extends Service {
         super.onDestroy();
     }
 
+    public void getTileData () {
+        Realm.init(getApplicationContext());
+        Realm realm = Realm.getDefaultInstance();
+
+        HeartrateObject heartrateObject = realm.where(HeartrateObject.class).sort("time").findAll().last();
+        heartrate = heartrateObject.getHeartrate();
+        broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
+
+        ExerciseObject exerciseObject = realm.where(ExerciseObject.class).sort("date").findAll().last();
+        stepsTaken = exerciseObject.getSteps();
+        caloriesBurned = (int) exerciseObject.getCaloriesBurned();
+        broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
+        broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
+
+        SleepObject sleepObject = realm.where(SleepObject.class).sort("date").findAll().last();
+        sleep = sleepObject.getDuration();
+        broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
+    }
+
     public static void updateAppState (Boolean appState) {
         if (appState) {
             if (broadcaster == null) {
                 return;
             }
             broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
+            broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
+            broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
+            broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
         }
 
         appInForeground = appState;
+    }
+
+    private static String sleepToString (long sleepDuration) {
+        long sleepMinutes = TimeUnit.MILLISECONDS.toMinutes(sleepDuration);
+        String hoursString = " hours ";
+        if (sleepMinutes > 600) {
+            hoursString = " hrs ";
+        }
+        return (String.valueOf(sleepMinutes / 60) + hoursString + String.valueOf(sleepMinutes % 60) + " minutes");
     }
 
     public static void updateData (String type, String data) {

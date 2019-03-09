@@ -105,6 +105,7 @@
                     android:layout_gravity="center_horizontal"
                     app:srcCompat="@drawable/tile_steps" />
                 <TextView
+                    android:id="@+id/tile_StepsTaken"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_horizontal"
@@ -143,6 +144,7 @@
                     android:layout_gravity="center_horizontal"
                     app:srcCompat="@drawable/tile_calories" />
                 <TextView
+                    android:id="@+id/tile_CaloriesBurned"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_horizontal"
@@ -175,6 +177,7 @@
                     android:layout_gravity="center_horizontal"
                     app:srcCompat="@drawable/tile_sleep" />
                 <TextView
+                    android:id="@+id/tile_Sleep"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_horizontal"

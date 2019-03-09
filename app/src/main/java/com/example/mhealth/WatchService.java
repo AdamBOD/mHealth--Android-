@@ -333,12 +333,26 @@ public class WatchService extends SAAgentV2 {
             });
         }
 
-        public void addToDB (SleepObject sleep) {
-
+        public void addToDB (final SleepObject sleepData) {
+            Realm.init(getApplicationContext());
+            Realm realm = Realm.getDefaultInstance();
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute (Realm realm) {
+                    realm.copyToRealmOrUpdate(sleepData);
+                }
+            });
         }
 
-        public void addToDB (ExerciseObject exercise) {
-
+        public void addToDB (final ExerciseObject exerciseData) {
+            Realm.init(getApplicationContext());
+            Realm realm = Realm.getDefaultInstance();
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute (Realm realm) {
+                    realm.copyToRealmOrUpdate(exerciseData);
+                }
+            });
         }
     }
 

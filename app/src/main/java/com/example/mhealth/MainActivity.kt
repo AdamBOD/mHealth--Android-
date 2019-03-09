@@ -62,9 +62,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         if (!BackgroundService.serviceRunning) {
+            logData(BackgroundService.serviceRunning.toString())
             val intent = Intent(this, BackgroundService::class.java)
             startService(intent)
-            bindService(intent, serviceConnection, BIND_AUTO_CREATE);
         }
 
         setContentView(R.layout.activity_main)
@@ -90,18 +90,6 @@ class MainActivity : AppCompatActivity() {
 
         logData ("Started App")
         AndroidNetworking.initialize(getApplicationContext());
-    }
-
-    private val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(className: ComponentName,
-                                        service: IBinder) {
-            val binder = service as BackgroundService.LocalBinder
-            backgroundService = binder.getService()
-        }
-
-        override fun onServiceDisconnected(name: ComponentName) {
-            //isBound = false
-        }
     }
 
     override fun onDestroy() {

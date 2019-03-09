@@ -45,6 +45,9 @@ class HomeFragment : Fragment() {
         BackgroundService.updateAppState(true)
         if (dataToBeLoaded) {
             tile_Heartrate.text = heartRate
+            tile_StepsTaken.text = stepsTaken
+            tile_CaloriesBurned.text = caloriesBurned
+            tile_Sleep.text = sleep
             dataToBeLoaded = false
         }
         super.onStart()
@@ -52,8 +55,6 @@ class HomeFragment : Fragment() {
 
     private val broadcastReceiver = object: BroadcastReceiver() {
         override fun onReceive (context: Context?, intent: Intent) {
-
-            // TODO: Send JSON instead
             if (intent.getStringExtra("contentType").equals("Heart")) {
                 val newBPM = intent.getStringExtra("data") + " BPM"
                 if (tile_Heartrate == null) {
@@ -62,6 +63,30 @@ class HomeFragment : Fragment() {
                     return
                 }
                 tile_Heartrate.text = newBPM
+            } else if (intent.getStringExtra("contentType").equals("Steps")) {
+                val newSteps = intent.getStringExtra("data") + " Steps"
+                if (tile_StepsTaken == null) {
+                    stepsTaken = newSteps
+                    dataToBeLoaded = true
+                    return
+                }
+                tile_StepsTaken.text = newSteps
+            } else if (intent.getStringExtra("contentType").equals("Calories")) {
+                val newSteps = intent.getStringExtra("data") + " Calories"
+                if (tile_Heartrate == null) {
+                    caloriesBurned = newSteps
+                    dataToBeLoaded = true
+                    return
+                }
+                tile_CaloriesBurned.text = newSteps
+            } else if (intent.getStringExtra("contentType").equals("Sleep")) {
+                val newSteps = intent.getStringExtra("data")
+                if (tile_Sleep == null) {
+                    sleep = newSteps
+                    dataToBeLoaded = true
+                    return
+                }
+                tile_Sleep.text = newSteps
             }
         }
     }
