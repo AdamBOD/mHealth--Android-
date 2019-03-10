@@ -223,6 +223,12 @@ public class WatchService extends SAAgentV2 {
                             boolean addObject = false;
                             if (exerciseData.getStepCount() < lastStepCount) {
                                 addObject = true;
+
+                                ExerciseObject exerciseObject = new ExerciseObject(
+                                        lastStepCount,
+                                        lastCalories,
+                                        new Date());
+                                realmDBHandler.addToDB(exerciseObject);
                             }
                             lastStepCount = (int) exerciseData.getStepCount();
                             lastCalories = exerciseData.getCalories();
