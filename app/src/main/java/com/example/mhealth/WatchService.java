@@ -284,15 +284,19 @@ public class WatchService extends SAAgentV2 {
 
                         }
                     } else {
-                        if (!retryConnection) {
-                            retryConnection = true;
-                            receivedData = true;
-                            logData ("Error getting data from watch, trying again");
-                            sendData("Retry");
+                        if (getSensorRequest().equals("Heart")) {
+                            if (!retryConnection) {
+                                retryConnection = true;
+                                receivedData = true;
+                                logData ("Error getting data from watch, trying again");
+                                sendData("Retry");
+                            } else {
+                                retryConnection = false;
+                                receivedData = true;
+                                logData ("Error getting data from watch, terminating");
+                            }
                         } else {
-                            retryConnection = false;
-                            receivedData = true;
-                            logData ("Error getting data from watch, terminating");
+                            sendData("Retry");
                         }
                     }
                 } else {
