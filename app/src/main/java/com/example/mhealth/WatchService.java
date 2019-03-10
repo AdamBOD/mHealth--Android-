@@ -238,7 +238,7 @@ public class WatchService extends SAAgentV2 {
                                     new Date());
 
                             updateData("Steps", String.valueOf(exerciseObject.getSteps()));
-                            updateData("Calories", String.valueOf(exerciseObject.getCaloriesBurned()));
+                            updateData("Calories", String.valueOf((int) Math.round(exerciseObject.getCaloriesBurned())));
 
                             if (addObject || exerciseObjectID == null) {
                                 exerciseObjectID = exerciseObject.getUID();
