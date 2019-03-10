@@ -1,6 +1,15 @@
 package com.example.mhealth;
 
-public class HealthData {
+import java.util.UUID;
+
+import io.realm.RealmObject;
+import io.realm.annotations.PrimaryKey;
+import io.realm.annotations.Required;
+
+public class HealthData extends RealmObject {
+    @PrimaryKey
+    @Required
+    private String UID;
     private int minimumHeartrate;
     private int maximumHeartrate;
     private int averageHeartrate;
@@ -10,6 +19,7 @@ public class HealthData {
 
     public HealthData (int minimumHeartrate, int maximumHeartrate, int averageHeartrate,
                        int stepsTaken, double caloriesBurned, long sleep) {
+        this.UID = UUID.randomUUID().toString();
         this.minimumHeartrate = minimumHeartrate;
         this.maximumHeartrate = maximumHeartrate;
         this.averageHeartrate = averageHeartrate;

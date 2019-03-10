@@ -58,6 +58,7 @@ public class WatchService extends SAAgentV2 {
     private String lastSleepStatus;
     private long lastSleepTimestamp;
 
+    private TempHealthData previousData;
 
 
     public WatchService(Context context) {
@@ -68,6 +69,14 @@ public class WatchService extends SAAgentV2 {
 
         realmDBHandler = new RealmDBHandler();
         httpHandler = new HTTPHandler();
+
+        previousData = realmDBHandler.getHealthData();
+
+        lastStepCount = previousData.getStepsTaken();
+        lastCalories = previousData.getCaloriesBurned();
+        exerciseObjectID = previousData.getExerciseObjectUID();
+        lastSleepStatus = previousData.getSleepStatus();
+        lastSleepTimestamp = previousData.getSleepTimestamp();
 
         try {
             gWatch.initialize(mContext);
@@ -165,7 +174,6 @@ public class WatchService extends SAAgentV2 {
         public void onError(int channelId, String errorMessage, int errorCode) {
         }
 
-        //@RequiresApi(api = Build.VERSION_CODES.N)
         @Override
         public void onReceive(int channelId, byte[] data) {
             if (data == null) {
@@ -219,6 +227,11 @@ public class WatchService extends SAAgentV2 {
                             lastStepCount = (int) exerciseData.getStepCount();
                             lastCalories = exerciseData.getCalories();
 
+                            previousData.setStepsTaken(lastStepCount);
+                            previousData.setCaloriesBurned(lastCalories);
+
+                            realmDBHandler.setHealthData(previousData);
+
                             ExerciseObject exerciseObject = new ExerciseObject(
                                     lastStepCount,
                                     lastCalories,
@@ -229,12 +242,13 @@ public class WatchService extends SAAgentV2 {
 
                             if (addObject || exerciseObjectID == null) {
                                 exerciseObjectID = exerciseObject.getUID();
+                                previousData.setExerciseObjectUID(exerciseObjectID);
                                 realmDBHandler.addToDB(exerciseObject);
+                                realmDBHandler.setHealthData(previousData);
                             } else {
                                 exerciseObject.setUID(exerciseObjectID);
                                 realmDBHandler.addToDB(exerciseObject);
                             }
-
                         } else if (sentType.equals("Sleep")) {
                             Gson g = new Gson();
                             SleepData sleepData = g.fromJson(message, SleepData.class);
@@ -251,13 +265,21 @@ public class WatchService extends SAAgentV2 {
                                     } else if (lastSleepStatus.equals("AWAKE")) {
                                         lastSleepStatus = currentStatus;
                                         lastSleepTimestamp = sleepData.getTimestamp();
+
+                                        previousData.setSleepStatus(lastSleepStatus);
+                                        previousData.setSleepTimestamp(lastSleepTimestamp);
+                                        realmDBHandler.setHealthData(previousData);
                                     } else {
                                         logData("Error getting Sleep data");
                                     }
                                 }
                                 lastSleepStatus = currentStatus;
+                                previousData.setSleepStatus(lastSleepStatus);
+                                realmDBHandler.setHealthData(previousData);
                             } else {
                                 lastSleepStatus = currentStatus;
+                                previousData.setSleepStatus(lastSleepStatus);
+                                realmDBHandler.setHealthData(previousData);
                             }
 
                         }
@@ -411,6 +433,38 @@ public class WatchService extends SAAgentV2 {
             });
             realm.close();
         }
+
+        public TempHealthData getHealthData () {
+            Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
+            Realm realm = Realm.getDefaultInstance();
+            TempHealthData healthData = realm.where(TempHealthData.class).findFirst();
+            realm.close();
+            return healthData;
+        }
+        public void setHealthData (final TempHealthData healthData) {
+            Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
+            Realm realm = Realm.getDefaultInstance();
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute (Realm realm) {
+                    realm.insertOrUpdate(healthData);
+                }
+            });
+            realm.close();
+        }
+
     }
 
     public class HTTPHandler {
