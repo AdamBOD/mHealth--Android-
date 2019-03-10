@@ -1,12 +1,13 @@
 package com.example.mhealth;
 
+import java.util.Date;
 import java.util.UUID;
 
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 import io.realm.annotations.Required;
 
-public class HealthData extends RealmObject {
+public class HealthDataObject extends RealmObject {
     @PrimaryKey
     @Required
     private String UID;
@@ -16,9 +17,12 @@ public class HealthData extends RealmObject {
     private int stepsTaken;
     private double caloriesBurned;
     private long sleep;
+    private Date date;
 
-    public HealthData (int minimumHeartrate, int maximumHeartrate, int averageHeartrate,
-                       int stepsTaken, double caloriesBurned, long sleep) {
+    public HealthDataObject () {}
+
+    public HealthDataObject (int minimumHeartrate, int maximumHeartrate, int averageHeartrate,
+                             int stepsTaken, double caloriesBurned, long sleep, Date date) {
         this.UID = UUID.randomUUID().toString();
         this.minimumHeartrate = minimumHeartrate;
         this.maximumHeartrate = maximumHeartrate;
@@ -26,6 +30,7 @@ public class HealthData extends RealmObject {
         this.stepsTaken = stepsTaken;
         this.caloriesBurned = caloriesBurned;
         this.sleep = sleep;
+        this.date = date;
     }
 
     public int getMinimumHeartrate() {

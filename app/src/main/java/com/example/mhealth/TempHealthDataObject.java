@@ -4,23 +4,28 @@ import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 import io.realm.annotations.Required;
 
-public class TempHealthData extends RealmObject {
+import java.util.Date;
+
+public class TempHealthDataObject extends RealmObject {
     @PrimaryKey
-    @Required
     private int UID;
     private int stepsTaken;
     private double caloriesBurned;
     private String exerciseObjectUID;
     private String sleepStatus;
     private long sleepTimestamp;
+    private Date date;
 
-    public TempHealthData (int stepsTaken, double caloriesBurned, String exerciseObjectUID, String sleepStatus, long sleepTimestamp) {
+    public TempHealthDataObject () {}
+
+    public TempHealthDataObject (int stepsTaken, double caloriesBurned, String exerciseObjectUID, String sleepStatus, long sleepTimestamp, Date date) {
         this.UID = 1;
         this.stepsTaken = stepsTaken;
         this.caloriesBurned = caloriesBurned;
         this.exerciseObjectUID = exerciseObjectUID;
         this.sleepStatus = sleepStatus;
         this.sleepTimestamp = sleepTimestamp;
+        this.date = date;
     }
 
     public int getStepsTaken() {

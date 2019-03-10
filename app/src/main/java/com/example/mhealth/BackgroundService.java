@@ -116,8 +116,8 @@ public class BackgroundService extends Service {
             heartrate = heartrateObject.getHeartrate();
             broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
 
-            ExerciseObject exerciseObject = realm.where(ExerciseObject.class).sort("date").findAll().last();
-            stepsTaken = exerciseObject.getSteps();
+            TempHealthDataObject exerciseObject = realm.where(TempHealthDataObject.class).findFirst();
+            stepsTaken = exerciseObject.getStepsTaken();
             caloriesBurned = (int) Math.round(exerciseObject.getCaloriesBurned());
             broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
             broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
@@ -178,9 +178,7 @@ public class BackgroundService extends Service {
                 if (watchService != null) {
                     if (currentMinutes < 10) {
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(0));
-                        if (currentMinutes == 0) {
-                            checkExercise = true;
-                        } else if (currentMinutes == 1) {
+                        if (currentMinutes == 1) {
                             if (currentHours == 0) {
                                 watchService.setSensorRequest("Reset");
                                 watchService.findPeers();
@@ -189,7 +187,7 @@ public class BackgroundService extends Service {
                             }
                         }
                     } else {
-                        if (currentMinutes == 30) {
+                        if (currentMinutes == 30 || currentMinutes == 58) {
                             checkExercise = true;
                         }
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(1));
@@ -206,8 +204,14 @@ public class BackgroundService extends Service {
                             }
 
                     } else if (intervalCheck.equals("3") || intervalCheck.equals("8")){
-                        watchService.setSensorRequest("Sleep");
-                        watchService.findPeers();
+                        if (checkExercise) {
+                            watchService.setSensorRequest("Exercise");
+                            watchService.findPeers();
+                            checkExercise = false;
+                        } else {
+                            watchService.setSensorRequest("Sleep");
+                            watchService.findPeers();
+                        }
                     }
                 }  else {
                     logData("WatchServiceAgent is null");
@@ -229,7 +233,67 @@ public class BackgroundService extends Service {
         }
 
         private void compileDailyData () {
+            Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
+            Realm realm = Realm.getDefaultInstance();
+            try {
+                SleepObject sleepObject = realm.where(SleepObject.class).sort("date").findAll().last();
+                ExerciseObject exerciseObject = realm.where(ExerciseObject.class).sort("date").findAll().last();
+                long dayinMilliseconds = 1000 * 60 *60 *24;
+                Date endDate = new Date();
+                Date startDate = new Date(endDate.getTime() - dayinMilliseconds);
+                final RealmResults<HeartrateObject> heartrateResults = realm.where(HeartrateObject.class).between("date", startDate, endDate).findAll();
 
+                int minHeartrate = 0;
+                int maxHeartrate = 0;
+                int averageHeartrate = 0;
+                for (int i=0; i < heartrateResults.size(); i++) {
+                    int heartrateResult = heartrateResults.get(i).getHeartrate();
+                    if (minHeartrate == 0 && maxHeartrate == 0) {
+                        maxHeartrate = heartrateResult;
+                        minHeartrate = heartrateResult;
+                    }
+
+                    if (heartrateResult > maxHeartrate) {
+                        maxHeartrate = heartrateResult;
+                    }
+
+                    if (heartrateResult < minHeartrate) {
+                        minHeartrate = minHeartrate;
+                    }
+
+                    averageHeartrate += heartrateResult;
+                }
+
+                averageHeartrate = averageHeartrate / heartrateResults.size();
+
+                final HealthDataObject healthDataObject = new HealthDataObject(minHeartrate, maxHeartrate,
+                        averageHeartrate, exerciseObject.getSteps(), exerciseObject.getCaloriesBurned(),
+                        sleepObject.getDuration(), new Date());
+                realm.executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute (Realm realm) {
+                        realm.copyToRealmOrUpdate(healthDataObject);
+                    }
+                });
+
+                final AverageHeartrateObject averageHeartrateObject = new AverageHeartrateObject(averageHeartrate,
+                        minHeartrate, maxHeartrate, new Date());
+                realm.executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute (Realm realm) {
+                        realm.copyToRealmOrUpdate(averageHeartrateObject);
+                    }
+                });
+                realm.close();
+            } catch (RuntimeException err) {
+                logData("Error getting daily data (" + err.getMessage() + ")");
+            }
         }
     }
     static void logData (String message) {

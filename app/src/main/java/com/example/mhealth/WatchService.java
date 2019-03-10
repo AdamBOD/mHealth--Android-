@@ -58,7 +58,7 @@ public class WatchService extends SAAgentV2 {
     private String lastSleepStatus;
     private long lastSleepTimestamp;
 
-    private TempHealthData previousData;
+    private TempHealthDataObject previousData;
 
 
     public WatchService(Context context) {
@@ -70,13 +70,7 @@ public class WatchService extends SAAgentV2 {
         realmDBHandler = new RealmDBHandler();
         httpHandler = new HTTPHandler();
 
-        previousData = realmDBHandler.getHealthData();
-
-        lastStepCount = previousData.getStepsTaken();
-        lastCalories = previousData.getCaloriesBurned();
-        exerciseObjectID = previousData.getExerciseObjectUID();
-        lastSleepStatus = previousData.getSleepStatus();
-        lastSleepTimestamp = previousData.getSleepTimestamp();
+        getPreviousData();
 
         try {
             gWatch.initialize(mContext);
@@ -91,6 +85,26 @@ public class WatchService extends SAAgentV2 {
              * without using this SDK, or you may want to notify user and close your application gracefully
              * (release resources, stop Service threads, close UI thread, etc.)
              */
+        }
+    }
+
+    private void getPreviousData () {
+        previousData = realmDBHandler.getHealthData();
+
+        if (previousData != null) {
+            lastStepCount = previousData.getStepsTaken();
+            lastCalories = previousData.getCaloriesBurned();
+            exerciseObjectID = previousData.getExerciseObjectUID();
+            lastSleepStatus = previousData.getSleepStatus();
+            lastSleepTimestamp = previousData.getSleepTimestamp();
+        } else {
+            lastStepCount = 0;
+            lastCalories = 0;
+            exerciseObjectID = null;
+            lastSleepStatus = null;
+            lastSleepTimestamp = 0;
+
+            previousData = new TempHealthDataObject();
         }
     }
 
@@ -201,6 +215,9 @@ public class WatchService extends SAAgentV2 {
                         if (sentType.equals("Heart")) {
                             JSONObject healthData = new JSONObject();
                             int averageHeartRate = receivedObject.get("heartrate").getAsInt();
+                            if (averageHeartRate <= 0) {
+                                return;
+                            }
                             try {
                                 healthData.put("userID", 200);
                                 healthData.put("heartbeat", averageHeartRate);
@@ -279,9 +296,9 @@ public class WatchService extends SAAgentV2 {
                                         logData("Error getting Sleep data");
                                     }
                                 }
-                                lastSleepStatus = currentStatus;
+                                /*lastSleepStatus = currentStatus;
                                 previousData.setSleepStatus(lastSleepStatus);
-                                realmDBHandler.setHealthData(previousData);
+                                realmDBHandler.setHealthData(previousData);*/
                             } else {
                                 lastSleepStatus = currentStatus;
                                 previousData.setSleepStatus(lastSleepStatus);
@@ -444,7 +461,7 @@ public class WatchService extends SAAgentV2 {
             realm.close();
         }
 
-        public TempHealthData getHealthData () {
+        public TempHealthDataObject getHealthData () {
             Realm.init(getApplicationContext());
             RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
                     .deleteRealmIfMigrationNeeded()
@@ -453,11 +470,17 @@ public class WatchService extends SAAgentV2 {
                     .build();
             Realm.setDefaultConfiguration(realmConfiguration);
             Realm realm = Realm.getDefaultInstance();
-            TempHealthData healthData = realm.where(TempHealthData.class).findFirst();
-            realm.close();
-            return healthData;
+            try {
+                TempHealthDataObject healthData = realm.where(TempHealthDataObject.class).findFirst();
+                realm.close();
+                return healthData;
+            } catch (RuntimeException err) {
+                logData("Previous data empty");
+                return null;
+            }
+
         }
-        public void setHealthData (final TempHealthData healthData) {
+        public void setHealthData (final TempHealthDataObject healthData) {
             Realm.init(getApplicationContext());
             RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
                     .deleteRealmIfMigrationNeeded()
