@@ -19,7 +19,7 @@ public class TempHealthDataObject extends RealmObject {
     public TempHealthDataObject () {}
 
     public TempHealthDataObject (int stepsTaken, double caloriesBurned, String exerciseObjectUID, String sleepStatus, long sleepTimestamp, Date date) {
-        this.UID = 1;
+        this.UID = 0;
         this.stepsTaken = stepsTaken;
         this.caloriesBurned = caloriesBurned;
         this.exerciseObjectUID = exerciseObjectUID;

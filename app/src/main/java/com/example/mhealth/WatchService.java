@@ -89,14 +89,23 @@ public class WatchService extends SAAgentV2 {
     }
 
     private void getPreviousData () {
-        previousData = realmDBHandler.getHealthData();
+        TempHealthDataObject previousDataObject = realmDBHandler.getHealthData();
 
-        if (previousData != null) {
+        if (previousDataObject != null) {
+            previousData = new TempHealthDataObject(previousDataObject.getStepsTaken(),
+                    previousDataObject.getCaloriesBurned(),
+                    previousDataObject.getExerciseObjectUID(),
+                    previousDataObject.getSleepStatus(),
+                    previousDataObject.getSleepTimestamp(),
+                    new Date());
+
             lastStepCount = previousData.getStepsTaken();
             lastCalories = previousData.getCaloriesBurned();
             exerciseObjectID = previousData.getExerciseObjectUID();
             lastSleepStatus = previousData.getSleepStatus();
             lastSleepTimestamp = previousData.getSleepTimestamp();
+
+            logData (String.valueOf(previousData.getSleepStatus()));
         } else {
             lastStepCount = 0;
             lastCalories = 0;
@@ -296,9 +305,9 @@ public class WatchService extends SAAgentV2 {
                                         logData("Error getting Sleep data");
                                     }
                                 }
-                                /*lastSleepStatus = currentStatus;
+                                lastSleepStatus = currentStatus;
                                 previousData.setSleepStatus(lastSleepStatus);
-                                realmDBHandler.setHealthData(previousData);*/
+                                realmDBHandler.setHealthData(previousData);
                             } else {
                                 lastSleepStatus = currentStatus;
                                 previousData.setSleepStatus(lastSleepStatus);

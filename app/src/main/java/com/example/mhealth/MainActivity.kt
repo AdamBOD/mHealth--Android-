@@ -80,10 +80,10 @@ class MainActivity : AppCompatActivity() {
         Realm.setDefaultConfiguration(realmConfiguration)
         val realm = Realm.getDefaultInstance()
 
-        /*val r = realm.where(SleepObject::class.java)
+        val r = realm.where(TempHealthDataObject::class.java)
                 .findAll()
 
-        logData("Sleep Data: " + r.toString())*/
+        logData("Sleep Data: " + r.toString())
 
         val navigation = findViewById<View>(R.id.navigation) as BottomNavigationView
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)

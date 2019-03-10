@@ -161,6 +161,12 @@ public class BackgroundService extends Service {
     public static void updateData (String type, String data) {
         if (type.equals("Heart")) {
             heartrate = Integer.parseInt(data);
+        } else if (type.equals("Steps")) {
+            stepsTaken = Integer.parseInt(data);
+        } else if (type.equals("Calories")) {
+            caloriesBurned = Integer.parseInt(data);
+        } else if (type.equals("Sleep")) {
+            sleep = Integer.parseInt(data);
         }
         broadcaster.sendContentUpdate(type, data);
     }
