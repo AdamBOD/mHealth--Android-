@@ -2,6 +2,7 @@ package com.example.mhealth;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
@@ -71,6 +72,7 @@ public class BackgroundService extends Service {
         logData("Background Service Started");
         broadcaster = new Broadcaster();
         getTileData();
+        checkExerciseReset();
         serviceRunning = true;
         return START_STICKY;
     }
@@ -135,6 +137,11 @@ public class BackgroundService extends Service {
         realm.close();
     }
 
+    private void checkExerciseReset () {
+        SharedPreferences preferencesEditor = getSharedPreferences("mHealth", MODE_PRIVATE);
+        preferencesEditor.getString("exerciseReset");
+    }
+
     public static void updateAppState (Boolean appState) {
         if (appState) {
             if (broadcaster == null) {
@@ -166,7 +173,7 @@ public class BackgroundService extends Service {
         } else if (type.equals("Calories")) {
             caloriesBurned = Integer.parseInt(data);
         } else if (type.equals("Sleep")) {
-            sleep = Integer.parseInt(data);
+            sleep = Long.parseLong(data);
         }
         broadcaster.sendContentUpdate(type, data);
     }
@@ -186,6 +193,7 @@ public class BackgroundService extends Service {
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(0));
                         if (currentMinutes == 1) {
                             if (currentHours == 0) {
+                                logData("Resetting Data");
                                 watchService.setSensorRequest("Reset");
                                 watchService.findPeers();
 
@@ -239,6 +247,7 @@ public class BackgroundService extends Service {
         }
 
         private void compileDailyData () {
+            logData("Compiling Daily Data");
             Realm.init(getApplicationContext());
             RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
                     .deleteRealmIfMigrationNeeded()
@@ -270,7 +279,7 @@ public class BackgroundService extends Service {
                     }
 
                     if (heartrateResult < minHeartrate) {
-                        minHeartrate = minHeartrate;
+                        minHeartrate = heartrateResult;
                     }
 
                     averageHeartrate += heartrateResult;
@@ -281,6 +290,8 @@ public class BackgroundService extends Service {
                 final HealthDataObject healthDataObject = new HealthDataObject(minHeartrate, maxHeartrate,
                         averageHeartrate, exerciseObject.getSteps(), exerciseObject.getCaloriesBurned(),
                         sleepObject.getDuration(), new Date());
+
+                logData("Daily Data Object: " + healthDataObject.toString());
                 realm.executeTransaction(new Realm.Transaction() {
                     @Override
                     public void execute (Realm realm) {
@@ -302,6 +313,7 @@ public class BackgroundService extends Service {
             }
         }
     }
+
     static void logData (String message) {
         JSONObject jsonObject = new JSONObject();
         try {

@@ -89,7 +89,12 @@ public class WatchService extends SAAgentV2 {
     }
 
     private void getPreviousData () {
-        TempHealthDataObject previousDataObject = realmDBHandler.getHealthData();
+        TempHealthDataObject previousDataObject = null;
+        try {
+            previousDataObject = realmDBHandler.getHealthData();
+        } catch (RuntimeException err) {
+            logData("Error getting previous data on boot (" + err.getMessage() + ")");
+        }
 
         if (previousDataObject != null) {
             previousData = new TempHealthDataObject(previousDataObject.getStepsTaken(),
@@ -207,7 +212,6 @@ public class WatchService extends SAAgentV2 {
             String message = new String(data);
             //TODO - Break up this function into separate handlers
             if (!receivedData) {
-                logData ("Received data: " + message);
                 if (!message.equals("undefined")) {
                     if (!message.equals("Error getting data from watch.")) {
                         receivedData = true;

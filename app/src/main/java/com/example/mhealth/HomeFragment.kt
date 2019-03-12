@@ -72,21 +72,21 @@ class HomeFragment : Fragment() {
                 }
                 tile_StepsTaken.text = newSteps
             } else if (intent.getStringExtra("contentType").equals("Calories")) {
-                val newSteps = intent.getStringExtra("data") + " Calories"
+                val calories = intent.getStringExtra("data") + " kCal"
                 if (tile_Heartrate == null) {
-                    caloriesBurned = newSteps
+                    caloriesBurned = calories
                     dataToBeLoaded = true
                     return
                 }
-                tile_CaloriesBurned.text = newSteps
+                tile_CaloriesBurned.text = calories
             } else if (intent.getStringExtra("contentType").equals("Sleep")) {
-                val newSteps = intent.getStringExtra("data")
+                val timeSlept = intent.getStringExtra("data")
                 if (tile_Sleep == null) {
-                    sleep = newSteps
+                    sleep = timeSlept
                     dataToBeLoaded = true
                     return
                 }
-                tile_Sleep.text = newSteps
+                tile_Sleep.text = timeSlept
             }
         }
     }
