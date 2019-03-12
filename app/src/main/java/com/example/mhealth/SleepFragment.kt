@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
@@ -15,6 +16,8 @@ import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.listener.ChartTouchListener
+import com.github.mikephil.charting.listener.OnChartGestureListener
 import kotlinx.android.synthetic.main.fragment_sleep.*
 import java.util.concurrent.ThreadLocalRandom
 
@@ -61,6 +64,7 @@ class SleepFragment : Fragment() {
         lineData.valueTextSize = 0f
         lineData.setDrawValues(false)
         lineData.setDrawCircles(false)
+        lineData.isHighlightEnabled = false
 
         sleep_Chart.data = LineData(lineData)
         sleep_Chart.setDrawGridBackground(false)
@@ -77,6 +81,49 @@ class SleepFragment : Fragment() {
         sleep_Chart.axisLeft.setDrawAxisLine(false)
         sleep_Chart.axisLeft.setDrawGridLines(false)
         sleep_Chart.axisLeft.setDrawLabels(false)
+
+        sleep_Chart.isDoubleTapToZoomEnabled = false
+        sleep_Chart.isScaleYEnabled = false
+
+        sleep_Chart.onChartGestureListener = object : OnChartGestureListener {
+            override fun onChartGestureStart(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartGestureEnd(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartLongPressed(me: MotionEvent) {
+
+            }
+
+            override fun onChartDoubleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartSingleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartFling(me1: MotionEvent, me2: MotionEvent, velocityX: Float, velocityY: Float) {
+
+            }
+
+            override fun onChartScale(me: MotionEvent, scaleX: Float, scaleY: Float) {
+                if (sleep_Chart.scaleX >= 6) {
+                    sleep_Chart.data.setDrawValues(true)
+                    sleep_Chart.data.setValueTextSize(15f)
+                } else {
+                    sleep_Chart.data.setDrawValues(false)
+                    sleep_Chart.data.setValueTextSize(0f)
+                }
+            }
+
+            override fun onChartTranslate(me: MotionEvent, dX: Float, dY: Float) {
+
+            }
+        }
 
         val averageLimit = LimitLine(480f, "Target")
         averageLimit.lineWidth = 4f

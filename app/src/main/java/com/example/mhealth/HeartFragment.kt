@@ -19,7 +19,11 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.github.mikephil.charting.components.Description
+import com.github.mikephil.charting.listener.OnChartGestureListener
 import java.util.concurrent.ThreadLocalRandom
+import com.samsung.accessory.safiletransfer.a.i
+import android.view.MotionEvent
+import com.github.mikephil.charting.listener.ChartTouchListener
 
 
 /**
@@ -70,6 +74,7 @@ class HeartFragment : Fragment() {
         lineData.valueTextSize = 0f
         lineData.setDrawValues(false)
         lineData.setDrawCircles(false)
+        lineData.isHighlightEnabled = false
 
         heart_Chart.data = LineData(lineData)
         heart_Chart.setDrawGridBackground(false)
@@ -87,6 +92,49 @@ class HeartFragment : Fragment() {
         heart_Chart.axisLeft.setDrawGridLines(false)
         heart_Chart.axisLeft.setDrawLabels(false)
 
+        heart_Chart.isDoubleTapToZoomEnabled = false
+        heart_Chart.isScaleYEnabled = false
+
+        heart_Chart.onChartGestureListener = object : OnChartGestureListener {
+            override fun onChartGestureStart(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartGestureEnd(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartLongPressed(me: MotionEvent) {
+
+            }
+
+            override fun onChartDoubleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartSingleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartFling(me1: MotionEvent, me2: MotionEvent, velocityX: Float, velocityY: Float) {
+
+            }
+
+            override fun onChartScale(me: MotionEvent, scaleX: Float, scaleY: Float) {
+                if (heart_Chart.scaleX >= 6) {
+                    heart_Chart.data.setDrawValues(true)
+                    heart_Chart.data.setValueTextSize(15f)
+                } else {
+                    heart_Chart.data.setDrawValues(false)
+                    heart_Chart.data.setValueTextSize(0f)
+                }
+            }
+
+            override fun onChartTranslate(me: MotionEvent, dX: Float, dY: Float) {
+
+            }
+        }
+
         val averageLimit = LimitLine(60f, "Target")
         averageLimit.lineWidth = 4f
         averageLimit.lineColor = Color.parseColor("#9E9E9E")
@@ -98,17 +146,6 @@ class HeartFragment : Fragment() {
         heart_Chart.axisLeft.setDrawLimitLinesBehindData(true)
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     *
-     *
-     * See the Android Training lesson [Communicating with Other Fragments]
-     * (http://developer.android.com/training/basics/fragments/communicating.html)
-     * for more information.
-     */
     interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         fun onFragmentInteraction(uri: Uri)

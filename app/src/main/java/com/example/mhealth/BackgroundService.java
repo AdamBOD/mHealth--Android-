@@ -22,6 +22,7 @@ import org.json.JSONObject;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
@@ -33,10 +34,12 @@ import io.realm.exceptions.RealmException;
 public class BackgroundService extends Service {
     public static boolean serviceRunning = false;
     private static final String TAG = "WatchService(C)";
-    private WatchService watchService = null;
+    private static WatchService watchService = null;
     private static Broadcaster broadcaster = null;
 
     private static Boolean appInForeground = false;
+
+    private Boolean dataToBeCompiled = false;
 
     private static int heartrate = 0;
     private static int stepsTaken = 0;
@@ -104,6 +107,7 @@ public class BackgroundService extends Service {
     }
 
     public void getTileData () {
+        logData("Getting tile data");
         Realm.init(getApplicationContext());
         RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
                 .deleteRealmIfMigrationNeeded()
@@ -138,8 +142,25 @@ public class BackgroundService extends Service {
     }
 
     private void checkExerciseReset () {
+        logData("Checking Exercise Reset");
         SharedPreferences preferencesEditor = getSharedPreferences("mHealth", MODE_PRIVATE);
-        preferencesEditor.getString("exerciseReset");
+        String lastResetString = preferencesEditor.getString("exerciseReset", new Date().toString());
+
+        if (lastResetString != null) {
+            Date lastReset = new Date(lastResetString);
+
+            if (lastReset.getDay() != new Date().getDay()) {
+                watchService.setSensorRequest("Reset");
+                watchService.findPeers();
+
+                dataToBeCompiled = true;
+            }
+        } else {
+            logData("Last Reset is null");
+            SharedPreferences.Editor sharedPreferencesEditor = getApplicationContext().getSharedPreferences("mHealth", MODE_PRIVATE).edit();
+            sharedPreferencesEditor.putString("exerciseReset", new Date().toString());
+            sharedPreferencesEditor.apply();
+        }
     }
 
     public static void updateAppState (Boolean appState) {
@@ -151,6 +172,9 @@ public class BackgroundService extends Service {
             broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
             broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
             broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
+
+            watchService.setSensorRequest("Exercise");
+            watchService.findPeers();
         }
 
         appInForeground = appState;
@@ -187,6 +211,11 @@ public class BackgroundService extends Service {
                 int currentHours = Calendar.getInstance().getTime().getHours();
                 int currentMinutes = Calendar.getInstance().getTime().getMinutes();
                 String intervalCheck;
+
+                if (dataToBeCompiled) {
+                    compileDailyData();
+                    dataToBeCompiled = false;
+                }
 
                 if (watchService != null) {
                     if (currentMinutes < 10) {
@@ -246,7 +275,7 @@ public class BackgroundService extends Service {
             }
         }
 
-        private void compileDailyData () {
+        public void compileDailyData () {
             logData("Compiling Daily Data");
             Realm.init(getApplicationContext());
             RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()

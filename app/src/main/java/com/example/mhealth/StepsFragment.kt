@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
@@ -15,6 +16,8 @@ import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.listener.ChartTouchListener
+import com.github.mikephil.charting.listener.OnChartGestureListener
 import kotlinx.android.synthetic.main.fragment_steps.*
 import java.util.concurrent.ThreadLocalRandom
 
@@ -61,6 +64,7 @@ class StepsFragment : Fragment() {
         lineData.valueTextSize = 0f
         lineData.setDrawValues(false)
         lineData.setDrawCircles(false)
+        lineData.isHighlightEnabled = false
 
         steps_Chart.data = LineData(lineData)
         steps_Chart.setDrawGridBackground(false)
@@ -77,6 +81,49 @@ class StepsFragment : Fragment() {
         steps_Chart.axisLeft.setDrawAxisLine(false)
         steps_Chart.axisLeft.setDrawGridLines(false)
         steps_Chart.axisLeft.setDrawLabels(false)
+
+        steps_Chart.isDoubleTapToZoomEnabled = false
+        steps_Chart.isScaleYEnabled = false
+
+        steps_Chart.onChartGestureListener = object : OnChartGestureListener {
+            override fun onChartGestureStart(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartGestureEnd(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartLongPressed(me: MotionEvent) {
+
+            }
+
+            override fun onChartDoubleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartSingleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartFling(me1: MotionEvent, me2: MotionEvent, velocityX: Float, velocityY: Float) {
+
+            }
+
+            override fun onChartScale(me: MotionEvent, scaleX: Float, scaleY: Float) {
+                if (steps_Chart.scaleX >= 6) {
+                    steps_Chart.data.setDrawValues(true)
+                    steps_Chart.data.setValueTextSize(15f)
+                } else {
+                    steps_Chart.data.setDrawValues(false)
+                    steps_Chart.data.setValueTextSize(0f)
+                }
+            }
+
+            override fun onChartTranslate(me: MotionEvent, dX: Float, dY: Float) {
+
+            }
+        }
 
         val averageLimit = LimitLine(6000f, "Target")
         averageLimit.lineWidth = 4f

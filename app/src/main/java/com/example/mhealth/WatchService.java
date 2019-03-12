@@ -6,6 +6,7 @@ that samsung packages with their Samsung Accessory Protocol SDK
 package com.example.mhealth;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -35,6 +36,7 @@ import androidx.annotation.RequiresApi;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
+import static android.content.Context.MODE_PRIVATE;
 import static com.example.mhealth.BackgroundService.logData;
 import static com.example.mhealth.BackgroundService.updateData;
 
@@ -281,6 +283,10 @@ public class WatchService extends SAAgentV2 {
                                 previousData.setExerciseObjectUID(exerciseObjectID);
                                 realmDBHandler.addToDB(exerciseObject);
                                 realmDBHandler.setHealthData(previousData);
+
+                                SharedPreferences.Editor sharedPreferencesEditor = getApplicationContext().getSharedPreferences("mHealth", MODE_PRIVATE).edit();
+                                sharedPreferencesEditor.putString("exerciseReset", new Date().toString());
+                                sharedPreferencesEditor.apply();
                             } else {
                                 exerciseObject.setUID(exerciseObjectID);
                                 realmDBHandler.addToDB(exerciseObject);
@@ -294,10 +300,12 @@ public class WatchService extends SAAgentV2 {
                                 if (!lastSleepStatus.equals(currentStatus)) {
                                     if (lastSleepStatus.equals("ASLEEP")) {
                                         long duration = (sleepData.getTimestamp() - lastSleepTimestamp) / 60;
-                                        logData(String.valueOf(duration));
-                                        SleepObject sleepObject = new SleepObject(duration, new Date());
-                                        updateData("Sleep", String.valueOf(sleepObject.getDuration()));
-                                        realmDBHandler.addToDB(sleepObject);
+                                        if (duration > 20) {
+                                            logData("Duration of Sleep: " + String.valueOf(duration));
+                                            SleepObject sleepObject = new SleepObject(duration, new Date());
+                                            updateData("Sleep", String.valueOf(sleepObject.getDuration()));
+                                            realmDBHandler.addToDB(sleepObject);
+                                        }
                                     } else if (lastSleepStatus.equals("AWAKE")) {
                                         lastSleepStatus = currentStatus;
                                         lastSleepTimestamp = sleepData.getTimestamp();

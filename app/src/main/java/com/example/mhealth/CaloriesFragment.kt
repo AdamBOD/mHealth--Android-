@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
@@ -15,6 +16,8 @@ import com.github.mikephil.charting.components.LimitLine
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.listener.ChartTouchListener
+import com.github.mikephil.charting.listener.OnChartGestureListener
 import kotlinx.android.synthetic.main.fragment_calories.*
 import java.util.concurrent.ThreadLocalRandom
 
@@ -61,6 +64,7 @@ class CaloriesFragment : Fragment() {
         lineData.valueTextSize = 0f
         lineData.setDrawValues(false)
         lineData.setDrawCircles(false)
+        lineData.isHighlightEnabled = false
 
         calories_Chart.data = LineData(lineData)
         calories_Chart.setDrawGridBackground(false)
@@ -77,6 +81,49 @@ class CaloriesFragment : Fragment() {
         calories_Chart.axisLeft.setDrawAxisLine(false)
         calories_Chart.axisLeft.setDrawGridLines(false)
         calories_Chart.axisLeft.setDrawLabels(false)
+
+        calories_Chart.isDoubleTapToZoomEnabled = false
+        calories_Chart.isScaleYEnabled = false
+
+        calories_Chart.onChartGestureListener = object : OnChartGestureListener {
+            override fun onChartGestureStart(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartGestureEnd(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartLongPressed(me: MotionEvent) {
+
+            }
+
+            override fun onChartDoubleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartSingleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartFling(me1: MotionEvent, me2: MotionEvent, velocityX: Float, velocityY: Float) {
+
+            }
+
+            override fun onChartScale(me: MotionEvent, scaleX: Float, scaleY: Float) {
+                if (calories_Chart.scaleX >= 6) {
+                    calories_Chart.data.setDrawValues(true)
+                    calories_Chart.data.setValueTextSize(15f)
+                } else {
+                    calories_Chart.data.setDrawValues(false)
+                    calories_Chart.data.setValueTextSize(0f)
+                }
+            }
+
+            override fun onChartTranslate(me: MotionEvent, dX: Float, dY: Float) {
+
+            }
+        }
 
         val averageLimit = LimitLine(260f, "Target")
         averageLimit.lineWidth = 4f
