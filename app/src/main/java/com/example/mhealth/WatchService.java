@@ -5,18 +5,20 @@ that samsung packages with their Samsung Accessory Protocol SDK
 
 package com.example.mhealth;
 
-import java.io.IOException;
-
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.androidnetworking.AndroidNetworking;
 import com.androidnetworking.common.Priority;
 import com.androidnetworking.error.ANError;
 import com.androidnetworking.interfaces.JSONArrayRequestListener;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.samsung.android.sdk.SsdkUnsupportedException;
 import com.samsung.android.sdk.accessory.SA;
 import com.samsung.android.sdk.accessory.SAAgentV2;
@@ -27,20 +29,51 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.util.Date;
+import java.util.Calendar;
+
+import androidx.annotation.RequiresApi;
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
+
+import static android.content.Context.MODE_PRIVATE;
+import static com.example.mhealth.BackgroundService.logData;
+import static com.example.mhealth.BackgroundService.updateData;
+
 public class WatchService extends SAAgentV2 {
     private static final String TAG = "WatchService(C)";
     private static final int WATCH_CHANNEL_ID = 104;
     private static final Class<ServiceConnection> SASOCKET_CLASS = ServiceConnection.class;
     private ServiceConnection mConnectionHandler = null;
+    private static RealmDBHandler realmDBHandler = null;
+    private HTTPHandler httpHandler = null;
     private Handler mHandler = new Handler();
     private Context mContext = null;
     private boolean receivedData = false;
+    private boolean retryConnection = false;
+    private String sensorRequest;
+
+    private int lastStepCount;
+    private double lastCalories;
+    private String exerciseObjectID;
+
+    private String lastSleepStatus;
+    private long lastSleepTimestamp;
+
+    private TempHealthDataObject previousData;
+
 
     public WatchService(Context context) {
         super(TAG, context, SASOCKET_CLASS);
         mContext = context;
 
         SA gWatch = new SA();
+
+        realmDBHandler = new RealmDBHandler();
+        httpHandler = new HTTPHandler();
+
+        getPreviousData();
 
         try {
             gWatch.initialize(mContext);
@@ -58,17 +91,58 @@ public class WatchService extends SAAgentV2 {
         }
     }
 
+    private void getPreviousData () {
+        TempHealthDataObject previousDataObject = null;
+        try {
+            previousDataObject = realmDBHandler.getHealthData();
+        } catch (RuntimeException err) {
+            logData("Error getting previous data on boot (" + err.getMessage() + ")");
+        }
+
+        if (previousDataObject != null) {
+            previousData = new TempHealthDataObject(previousDataObject.getStepsTaken(),
+                    previousDataObject.getCaloriesBurned(),
+                    previousDataObject.getExerciseObjectUID(),
+                    previousDataObject.getSleepStatus(),
+                    previousDataObject.getSleepTimestamp(),
+                    new Date());
+
+            lastStepCount = previousData.getStepsTaken();
+            lastCalories = previousData.getCaloriesBurned();
+            exerciseObjectID = previousData.getExerciseObjectUID();
+            lastSleepStatus = previousData.getSleepStatus();
+            lastSleepTimestamp = previousData.getSleepTimestamp();
+
+            logData (String.valueOf(previousData.getSleepStatus()));
+        } else {
+            lastStepCount = 0;
+            lastCalories = 0;
+            exerciseObjectID = null;
+            lastSleepStatus = null;
+            lastSleepTimestamp = 0;
+
+            previousData = new TempHealthDataObject();
+        }
+    }
+
+    public String getSensorRequest() {
+        return sensorRequest;
+    }
+
+    public void setSensorRequest(String sensorRequest) {
+        this.sensorRequest = sensorRequest;
+    }
+
     @Override
     protected void onFindPeerAgentsResponse(SAPeerAgent[] peerAgents, int result) {
         if ((result == SAAgentV2.PEER_AGENT_FOUND) && (peerAgents != null)) {
-            //Toast.makeText(getApplicationContext(), "CONNECTED", Toast.LENGTH_SHORT).show();
             for(SAPeerAgent peerAgent:peerAgents)
                 requestServiceConnection(peerAgent);
         } else if (result == SAAgentV2.FINDPEER_DEVICE_NOT_CONNECTED) {
-            //Toast.makeText(getApplicationContext(), "FINDPEER_DEVICE_NOT_CONNECTED", Toast.LENGTH_LONG).show();
+            logData ("FINDPEER_DEVICE_NOT_CONNECTED");
             Log.e("Watch Error","Disconnected");
         } else if (result == SAAgentV2.FINDPEER_SERVICE_NOT_FOUND) {
-            //Toast.makeText(getApplicationContext(), "FINDPEER_SERVICE_NOT_FOUND", Toast.LENGTH_LONG).show();
+            logData ("FINDPEER_SERVICE_NOT_FOUND");
             Log.e("Watch Error","Disconnected");
         } else {
             //Toast.makeText(getApplicationContext(), "Could not find the watch", Toast.LENGTH_LONG).show();
@@ -87,14 +161,15 @@ public class WatchService extends SAAgentV2 {
         if (result == SAAgentV2.CONNECTION_SUCCESS) {
             this.mConnectionHandler = (ServiceConnection) socket;
             Log.d("Watch Success","Connected");
-            sendData("Heart");
+            sendData(getSensorRequest());
         } else if (result == SAAgentV2.CONNECTION_ALREADY_EXIST) {
             Log.d("Watch Success","Connected");
-            sendData("Heart");
+            sendData(getSensorRequest());
         } else if (result == SAAgentV2.CONNECTION_DUPLICATE_REQUEST) {
             //Toast.makeText(mContext, "CONNECTION_DUPLICATE_REQUEST", Toast.LENGTH_LONG).show();
         } else {
             //Toast.makeText(mContext, "Failed to connect", Toast.LENGTH_LONG).show();
+            logData ("Failed to connect");
         }
     }
 
@@ -132,46 +207,165 @@ public class WatchService extends SAAgentV2 {
 
         @Override
         public void onReceive(int channelId, byte[] data) {
-            final String message = new String(data);
-            //addMessage("Received: ", message);
+            if (data == null) {
+                logData("Empty Response, retrying");
+                sendData("Retry");
+                return;
+            }
+            String message = new String(data);
+            //TODO - Break up this function into separate handlers
             if (!receivedData) {
                 if (!message.equals("undefined")) {
-                    //Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
-                    receivedData = true;
+                    if (!message.equals("Error getting data from watch.")) {
+                        receivedData = true;
+                        retryConnection = false;
+                        JsonObject receivedObject = new JsonParser().parse(message).getAsJsonObject();
+                        logData(receivedObject.toString());
 
-                    JSONObject jsonObject = new JSONObject();
-                    try {
-                        jsonObject.put("userID", 200);
-                        jsonObject.put("heartbeat", Integer.parseInt(message));
-                        jsonObject.put("stepsTaken", 1200);
-                        jsonObject.put("caloriesBurned", 2200);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                        if (message.equals("{}")) {
+                            return;
+                        }
+
+                        String sentType = receivedObject.get("type").getAsString();
+
+                        if (sentType.equals("Heart")) {
+                            JSONObject healthData = new JSONObject();
+                            int averageHeartRate = receivedObject.get("heartrate").getAsInt();
+                            if (averageHeartRate <= 0) {
+                                return;
+                            }
+                            try {
+                                healthData.put("userID", 200);
+                                healthData.put("heartbeat", averageHeartRate);
+                                healthData.put("stepsTaken", 1200);
+                                healthData.put("caloriesBurned", 2200);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+
+                            httpHandler.postData(healthData);
+
+                            HeartrateObject heartrateObject = new HeartrateObject(averageHeartRate, new Date());
+
+                            updateData("Heart", String.valueOf(heartrateObject.getHeartrate()));
+
+                            realmDBHandler.addToDB(heartrateObject);
+                        } else if (sentType.equals("Exercise")) {
+                            Gson g = new Gson();
+                            ExerciseData exerciseData = g.fromJson(message, ExerciseData.class);
+                            boolean addObject = false;
+                            ExerciseObject exerciseObject;
+                            if (exerciseData.getStepCount() < lastStepCount) {
+                                SharedPreferences preferencesEditor = getApplicationContext().getSharedPreferences("mHealth", MODE_PRIVATE);
+                                String lastResetString = preferencesEditor.getString("exerciseReset", new Date().toString());
+                                if (new Date().getDay() == new Date(lastResetString).getDay()) {
+                                    addObject = true;
+                                } else {
+                                    lastStepCount += exerciseData.getStepCount();
+                                    lastCalories += exerciseData.getCalories();
+                                }
+
+                                exerciseObject = new ExerciseObject(
+                                        lastStepCount,
+                                        lastCalories,
+                                        new Date());
+                                realmDBHandler.addToDB(exerciseObject);
+                            } else {
+                                lastStepCount = (int) exerciseData.getStepCount();
+                                lastCalories = exerciseData.getCalories();
+
+                                previousData.setStepsTaken(lastStepCount);
+                                previousData.setCaloriesBurned(lastCalories);
+
+                                realmDBHandler.setHealthData(previousData);
+
+                                exerciseObject = new ExerciseObject(
+                                        lastStepCount,
+                                        lastCalories,
+                                        new Date());
+                            }
+
+                            updateData("Steps", String.valueOf(exerciseObject.getSteps()));
+                            updateData("Calories", String.valueOf((int) Math.round(exerciseObject.getCaloriesBurned())));
+
+                            if (addObject || exerciseObjectID == null) {
+                                exerciseObjectID = exerciseObject.getUID();
+                                previousData.setExerciseObjectUID(exerciseObjectID);
+                                realmDBHandler.addToDB(exerciseObject);
+                                realmDBHandler.setHealthData(previousData);
+
+                                SharedPreferences.Editor sharedPreferencesEditor = getApplicationContext().getSharedPreferences("mHealth", MODE_PRIVATE).edit();
+                                sharedPreferencesEditor.putString("exerciseReset", new Date().toString());
+                                sharedPreferencesEditor.apply();
+                            } else {
+                                exerciseObject.setUID(exerciseObjectID);
+                                realmDBHandler.addToDB(exerciseObject);
+                            }
+                        } else if (sentType.equals("Sleep")) {
+                            Gson g = new Gson();
+                            SleepData sleepData = g.fromJson(message, SleepData.class);
+                            String currentStatus = sleepData.getStatus();
+
+                            if (lastSleepStatus != null) {
+                                if (!lastSleepStatus.equals(currentStatus)) {
+                                    if (lastSleepStatus.equals("ASLEEP")) {
+                                        if (Calendar.getInstance().getTimeInMillis() - sleepData.getTimestamp() >= 60000) {
+                                            long duration = ((sleepData.getTimestamp() - lastSleepTimestamp) / 1000) / 60;
+                                            if (duration > 20) {
+                                                logData("Duration of Sleep: " + String.valueOf(duration));
+                                                SleepObject sleepObject = new SleepObject(duration, new Date());
+                                                updateData("Sleep", String.valueOf(sleepObject.getDuration()));
+                                                realmDBHandler.addToDB(sleepObject);
+                                            }
+
+                                            lastSleepStatus = currentStatus;
+                                            previousData.setSleepStatus(lastSleepStatus);
+                                            realmDBHandler.setHealthData(previousData);
+                                        }
+                                    } else if (lastSleepStatus.equals("AWAKE")) {
+                                        lastSleepStatus = currentStatus;
+                                        lastSleepTimestamp = sleepData.getTimestamp();
+
+                                        previousData.setSleepStatus(lastSleepStatus);
+                                        previousData.setSleepTimestamp(lastSleepTimestamp);
+                                        realmDBHandler.setHealthData(previousData);
+                                    } else {
+                                        logData("Error getting Sleep data");
+                                    }
+                                }
+                            } else {
+                                lastSleepStatus = currentStatus;
+                                previousData.setSleepStatus(lastSleepStatus);
+                                realmDBHandler.setHealthData(previousData);
+                            }
+                        }
+                    } else {
+                        if (getSensorRequest().equals("Heart")) {
+                            if (!retryConnection) {
+                                retryConnection = true;
+                                receivedData = true;
+                                logData ("Error getting data from watch, trying again");
+                                sendData("Retry");
+                            } else {
+                                retryConnection = false;
+                                receivedData = true;
+                                logData ("Error getting data from watch, terminating");
+                            }
+                        } else {
+                            sendData("Retry");
+                        }
                     }
-
-                    AndroidNetworking.post("https://mhealth-api-fyp.herokuapp.com/data")
-                            .addJSONObjectBody(jsonObject) // posting json
-                            .setTag("")
-                            .setPriority(Priority.MEDIUM)
-                            .build()
-                            .getAsJSONArray(new JSONArrayRequestListener() {
-                                @Override
-                                public void onResponse(JSONArray response) {
-                                    // do anything with response
-                                }
-                                @Override
-                                public void onError(ANError error) {
-                                    // handle error
-                                }
-                            });
+                } else {
+                    receivedData = true;
+                    logData ("Error getting data from watch, data undefined, retrying");
+                    sendData("Retry");
                 }
             }
         }
 
         @Override
         protected void onServiceConnectionLost(int reason) {
-            //updateTextView("Disconnected");
-            //closeConnection();
+            closeConnection();
         }
     }
 
@@ -187,9 +381,29 @@ public class WatchService extends SAAgentV2 {
 
     public boolean sendData(final String data) {
         boolean retvalue = false;
-        if (mConnectionHandler != null) {
+        if (mConnectionHandler != null && data != null) {
             try {
                 mConnectionHandler.send(WATCH_CHANNEL_ID, data.getBytes());
+                if (getSensorRequest().equals("Heart")) {
+                    retryConnection = true;
+                    Runnable runnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!receivedData && retryConnection) {
+                                logData("Cancelling heart rate and retrying");
+                                setSensorRequest("Retry");
+                                sendData(getSensorRequest());
+                                retryConnection = false;
+                            } else if (!receivedData && !retryConnection) {
+                                logData("Cancelling heart rate");
+                                setSensorRequest("StopHeart");
+                            }
+                        }
+                    };
+
+                    setTimeout(runnable, 30000);
+                }
+                logData("Querying: " + getSensorRequest());
                 receivedData = false;
                 retvalue = true;
             } catch (IOException e) {
@@ -200,7 +414,21 @@ public class WatchService extends SAAgentV2 {
         return retvalue;
     }
 
-    public boolean closeConnection() {
+
+    //Async Timeout code from https://stackoverflow.com/questions/26311470/what-is-the-equivalent-of-javascript-settimeout-in-java
+    private static void setTimeout(Runnable runnable, int delay){
+        new Thread(() -> {
+            try {
+                Thread.sleep(delay);
+                runnable.run();
+            }
+            catch (Exception e){
+                System.err.println(e);
+            }
+        }).start();
+    }
+
+    private boolean closeConnection() {
         if (mConnectionHandler != null) {
             mConnectionHandler.close();
             mConnectionHandler = null;
@@ -230,6 +458,245 @@ public class WatchService extends SAAgentV2 {
             return false;
         }
         return true;
+    }
+
+    public class RealmDBHandler {
+        public RealmDBHandler () {}
+
+        public void prepareRealmDB () {
+            Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
+        }
+
+        public void addToDB (final HeartrateObject heartrate) {
+            Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
+            Realm realm = Realm.getDefaultInstance();
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute (Realm realm) {
+                    realm.copyToRealmOrUpdate(heartrate);
+                }
+            });
+            realm.close();
+        }
+
+        public void addToDB (final SleepObject sleepData) {
+            Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
+            Realm realm = Realm.getDefaultInstance();
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute (Realm realm) {
+                    realm.copyToRealmOrUpdate(sleepData);
+                }
+            });
+            realm.close();
+        }
+
+        public void addToDB (final ExerciseObject exerciseData) {
+            Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
+            Realm realm = Realm.getDefaultInstance();
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute (Realm realm) {
+                    realm.insertOrUpdate(exerciseData);
+                }
+            });
+            realm.close();
+        }
+
+        public TempHealthDataObject getHealthData () {
+            Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
+            Realm realm = Realm.getDefaultInstance();
+            try {
+                TempHealthDataObject healthData = realm.where(TempHealthDataObject.class).findFirst();
+                realm.close();
+                return healthData;
+            } catch (RuntimeException err) {
+                logData("Previous data empty");
+                return null;
+            }
+
+        }
+        public void setHealthData (final TempHealthDataObject healthData) {
+            Realm.init(getApplicationContext());
+            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build();
+            Realm.setDefaultConfiguration(realmConfiguration);
+            Realm realm = Realm.getDefaultInstance();
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute (Realm realm) {
+                    realm.insertOrUpdate(healthData);
+                }
+            });
+            realm.close();
+        }
+
+    }
+
+    public class HTTPHandler {
+        public HTTPHandler () {}
+
+        public void postData (JSONObject data) {
+            AndroidNetworking.post("https://mhealth-api-fyp.herokuapp.com/data")
+                    .addJSONObjectBody(data) // posting json
+                    .setTag("")
+                    .setPriority(Priority.MEDIUM)
+                    .build()
+                    .getAsJSONArray(new JSONArrayRequestListener() {
+                        @Override
+                        public void onResponse(JSONArray response) {
+                            // do anything with response
+
+                            logData ("Successfully sent data");
+                        }
+                        @Override
+                        public void onError(ANError error) {
+                            // handle error
+                            logData ("Failed to send data (" + error.getMessage() + ")" + "(" + error.getErrorDetail() + ")");
+                        }
+                    });
+        }
+    }
+
+    class HeartData {
+        private String type;
+        private int heartrate;
+
+        public HeartData (String type, int heartrate) {
+            this.type = type;
+            this.heartrate = heartrate;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public int getHeartrate() {
+            return heartrate;
+        }
+
+        public void setHeartrate(int heartrate) {
+            this.heartrate = heartrate;
+        }
+    }
+
+    class SleepData {
+        private String type;
+        private String status;
+        private long timestamp;
+
+        public SleepData (String type, String status, int timestamp) {
+            this.type = type;
+            this.status = status;
+            this.timestamp = timestamp;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
+        }
+
+        public void setTimestamp(long timestamp) {
+            this.timestamp = timestamp;
+        }
+    }
+
+    class ExerciseData {
+        private String type;
+        private long stepCount;
+        private double calories;
+        private double frequency;
+
+        public ExerciseData (String type, long stepCount, double calories, double frequency) {
+            this.type = type;
+            this.stepCount = stepCount;
+            this.calories = calories;
+            this.frequency = frequency;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public long getStepCount() {
+            return stepCount;
+        }
+
+        public void setStepCount(long stepCount) {
+            this.stepCount = stepCount;
+        }
+
+        public double getCalories() {
+            return calories;
+        }
+
+        public void setCalories(double calories) {
+            this.calories = calories;
+        }
+
+        public double getFrequency() {
+            return frequency;
+        }
+
+        public void setFrequency(double frequency) {
+            this.frequency = frequency;
+        }
     }
 }
 

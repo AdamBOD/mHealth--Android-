@@ -1,40 +1,41 @@
 package com.example.mhealth
 
 import android.content.Context
+import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-
-
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
+import androidx.annotation.RequiresApi
+import com.github.mikephil.charting.components.LimitLine
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.listener.ChartTouchListener
+import com.github.mikephil.charting.listener.OnChartGestureListener
+import io.realm.RealmResults
+import kotlinx.android.synthetic.main.fragment_calories.*
+import java.util.concurrent.ThreadLocalRandom
 
 /**
  * A simple [Fragment] subclass.
  * Activities that contain this fragment must implement the
- * [CaloriesFragment.OnFragmentInteractionListener] interface
+ * [HeartFragment.OnFragmentInteractionListener] interface
  * to handle interaction events.
- * Use the [CaloriesFragment.newInstance] factory method to
+ * Use the [HeartFragment.newInstance] factory method to
  * create an instance of this fragment.
  *
  */
 class CaloriesFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
-    private var listener: OnFragmentInteractionListener? = null
+    private var healthDataObjects: RealmResults<HealthDataObject>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -42,24 +43,102 @@ class CaloriesFragment : Fragment() {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_calories, container, false)
     }
-
-    // TODO: Rename method, update argument and hook method into UI event
-    fun onButtonPressed(uri: Uri) {
-        listener?.onFragmentInteraction(uri)
+    
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        createChart()
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is OnFragmentInteractionListener) {
-            listener = context
-        } else {
-            throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    private fun createChart () {
+        healthDataObjects = MainActivity.getHistoricalData()
+        val values = ArrayList<Entry>()
+        for (i in 0..healthDataObjects!!.size - 1) {
+            val entry = Entry(i.toFloat(), healthDataObjects!![i]!!.caloriesBurned.toFloat(), healthDataObjects!![i]!!.date.toString())
+            values.add(entry)
         }
-    }
+        values.add (Entry(4f, 250f, "02/03"))
+        val lineData = LineDataSet (values, "Calories Burned")
+        lineData.fillColor = Color.parseColor("#1976D2")
+        lineData.color = Color.parseColor("#1976D2")
+        lineData.lineWidth = 2f
+        lineData.setDrawFilled(true)
+        val drawable = context?.let { ContextCompat.getDrawable(it, R.drawable.chart_background) }
+        lineData.fillDrawable = drawable
+        lineData.valueTextSize = 0f
+        lineData.setDrawValues(false)
+        lineData.setDrawCircles(false)
+        lineData.isHighlightEnabled = false
 
-    override fun onDetach() {
-        super.onDetach()
-        listener = null
+        calories_Chart.data = LineData(lineData)
+        calories_Chart.setDrawGridBackground(false)
+        calories_Chart.setDrawBorders(false)
+        calories_Chart.setDrawMarkers(false)
+        calories_Chart.disableScroll()
+        calories_Chart.axisLeft.axisMinimum = 0f //TODO - Average minus certain amount
+        calories_Chart.xAxis.isEnabled = false
+        calories_Chart.axisLeft.isEnabled = true
+        calories_Chart.axisRight.isEnabled = false
+        calories_Chart.description.text = ""
+        calories_Chart.legend.isEnabled = false
+
+        calories_Chart.axisLeft.setDrawAxisLine(false)
+        calories_Chart.axisLeft.setDrawGridLines(false)
+        calories_Chart.axisLeft.setDrawLabels(false)
+
+        calories_Chart.isDoubleTapToZoomEnabled = false
+        calories_Chart.isScaleYEnabled = false
+
+        calories_Chart.onChartGestureListener = object : OnChartGestureListener {
+            override fun onChartGestureStart(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartGestureEnd(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartLongPressed(me: MotionEvent) {
+
+            }
+
+            override fun onChartDoubleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartSingleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartFling(me1: MotionEvent, me2: MotionEvent, velocityX: Float, velocityY: Float) {
+
+            }
+
+            override fun onChartScale(me: MotionEvent, scaleX: Float, scaleY: Float) {
+                if (calories_Chart.scaleX >= 6) {
+                    calories_Chart.data.setDrawValues(true)
+                    calories_Chart.data.setValueTextSize(15f)
+                } else {
+                    calories_Chart.data.setDrawValues(false)
+                    calories_Chart.data.setValueTextSize(0f)
+                }
+            }
+
+            override fun onChartTranslate(me: MotionEvent, dX: Float, dY: Float) {
+
+            }
+        }
+
+        val averageLimit = LimitLine(260f, "Target")
+        averageLimit.lineWidth = 4f
+        averageLimit.lineColor = Color.parseColor("#9E9E9E")
+        averageLimit.enableDashedLine(30f, 10f, 0f)
+        averageLimit.labelPosition = LimitLine.LimitLabelPosition.RIGHT_BOTTOM
+        averageLimit.textSize = 15f
+
+        calories_Chart.axisLeft.limitLines.add(0, averageLimit)
+        calories_Chart.axisLeft.setDrawLimitLinesBehindData(true)
     }
 
     /**
@@ -79,22 +158,10 @@ class CaloriesFragment : Fragment() {
     }
 
     companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment CaloriesFragment.
-         */
-        // TODO: Rename and change types and number of parameters
         @JvmStatic
-        fun newInstance(param1: String, param2: String) =
+        fun newInstance() =
                 CaloriesFragment().apply {
-                    arguments = Bundle().apply {
-                        putString(ARG_PARAM1, param1)
-                        putString(ARG_PARAM2, param2)
-                    }
+                    arguments = Bundle().apply {}
                 }
     }
 }

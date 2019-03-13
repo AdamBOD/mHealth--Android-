@@ -22,7 +22,7 @@
         <service
             android:name="com.example.mhealth.BackgroundService"
             android:enabled="true"
-            android:exported="true" />
+            android:exported="true"/>
 
         <activity
             android:name=".MainActivity"
@@ -48,16 +48,6 @@
         <meta-data
             android:name="AccessoryServicesLocation"
             android:value="/res/xml/accessoryservices.xml" />
-
-        <!--<meta-data
-            android:name=" gear_app_packagename "
-            android:value="mHealthMonitor"/>
-        <meta-data
-            android:name=" gear_app_min_version "
-            android:value="2.0.0"/>
-        <meta-data
-            android:name="GearAppType"
-            android:value="wgt"/>-->
     </application>
 
 </manifest>

@@ -1,40 +1,41 @@
 package com.example.mhealth
 
 import android.content.Context
+import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-
-
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
+import androidx.annotation.RequiresApi
+import com.github.mikephil.charting.components.LimitLine
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.listener.ChartTouchListener
+import com.github.mikephil.charting.listener.OnChartGestureListener
+import io.realm.RealmResults
+import kotlinx.android.synthetic.main.fragment_steps.*
+import java.util.concurrent.ThreadLocalRandom
 
 /**
  * A simple [Fragment] subclass.
  * Activities that contain this fragment must implement the
- * [StepsFragment.OnFragmentInteractionListener] interface
+ * [HeartFragment.OnFragmentInteractionListener] interface
  * to handle interaction events.
- * Use the [StepsFragment.newInstance] factory method to
+ * Use the [HeartFragment.newInstance] factory method to
  * create an instance of this fragment.
  *
  */
 class StepsFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
-    private var listener: OnFragmentInteractionListener? = null
+    private var healthDataObjects: RealmResults<HealthDataObject>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -43,23 +44,101 @@ class StepsFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_steps, container, false)
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    fun onButtonPressed(uri: Uri) {
-        listener?.onFragmentInteraction(uri)
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        createChart()
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is OnFragmentInteractionListener) {
-            listener = context
-        } else {
-            throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    private fun createChart () {
+        healthDataObjects = MainActivity.getHistoricalData()
+        val values = ArrayList<Entry>()
+        for (i in 0..healthDataObjects!!.size - 1) {
+            val entry = Entry(i.toFloat(), healthDataObjects!![i]!!.stepsTaken.toFloat(), healthDataObjects!![i]!!.date.toString())
+            values.add(entry)
         }
-    }
+        values.add (Entry(4f, 6500f, "02/03"))
+        val lineData = LineDataSet (values, "Steps Taken")
+        lineData.fillColor = Color.parseColor("#1976D2")
+        lineData.color = Color.parseColor("#1976D2")
+        lineData.lineWidth = 2f
+        lineData.setDrawFilled(true)
+        val drawable = context?.let { ContextCompat.getDrawable(it, R.drawable.chart_background) }
+        lineData.fillDrawable = drawable
+        lineData.valueTextSize = 0f
+        lineData.setDrawValues(false)
+        lineData.setDrawCircles(false)
+        lineData.isHighlightEnabled = false
 
-    override fun onDetach() {
-        super.onDetach()
-        listener = null
+        steps_Chart.data = LineData(lineData)
+        steps_Chart.setDrawGridBackground(false)
+        steps_Chart.setDrawBorders(false)
+        steps_Chart.setDrawMarkers(false)
+        steps_Chart.disableScroll()
+        steps_Chart.axisLeft.axisMinimum = 20f //TODO - Average minus certain amount
+        steps_Chart.xAxis.isEnabled = false
+        steps_Chart.axisLeft.isEnabled = true
+        steps_Chart.axisRight.isEnabled = false
+        steps_Chart.description.text = ""
+        steps_Chart.legend.isEnabled = false
+
+        steps_Chart.axisLeft.setDrawAxisLine(false)
+        steps_Chart.axisLeft.setDrawGridLines(false)
+        steps_Chart.axisLeft.setDrawLabels(false)
+
+        steps_Chart.isDoubleTapToZoomEnabled = false
+        steps_Chart.isScaleYEnabled = false
+
+        steps_Chart.onChartGestureListener = object : OnChartGestureListener {
+            override fun onChartGestureStart(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartGestureEnd(me: MotionEvent, lastPerformedGesture: ChartTouchListener.ChartGesture) {
+
+            }
+
+            override fun onChartLongPressed(me: MotionEvent) {
+
+            }
+
+            override fun onChartDoubleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartSingleTapped(me: MotionEvent) {
+
+            }
+
+            override fun onChartFling(me1: MotionEvent, me2: MotionEvent, velocityX: Float, velocityY: Float) {
+
+            }
+
+            override fun onChartScale(me: MotionEvent, scaleX: Float, scaleY: Float) {
+                if (steps_Chart.scaleX >= 6) {
+                    steps_Chart.data.setDrawValues(true)
+                    steps_Chart.data.setValueTextSize(15f)
+                } else {
+                    steps_Chart.data.setDrawValues(false)
+                    steps_Chart.data.setValueTextSize(0f)
+                }
+            }
+
+            override fun onChartTranslate(me: MotionEvent, dX: Float, dY: Float) {
+
+            }
+        }
+
+        val averageLimit = LimitLine(6000f, "Target")
+        averageLimit.lineWidth = 4f
+        averageLimit.lineColor = Color.parseColor("#9E9E9E")
+        averageLimit.enableDashedLine(30f, 10f, 0f)
+        averageLimit.labelPosition = LimitLine.LimitLabelPosition.RIGHT_BOTTOM
+        averageLimit.textSize = 15f
+
+        steps_Chart.axisLeft.limitLines.add(0, averageLimit)
+        steps_Chart.axisLeft.setDrawLimitLinesBehindData(true)
     }
 
     /**
@@ -79,22 +158,10 @@ class StepsFragment : Fragment() {
     }
 
     companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment StepsFragment.
-         */
-        // TODO: Rename and change types and number of parameters
         @JvmStatic
-        fun newInstance(param1: String, param2: String) =
+        fun newInstance() =
                 StepsFragment().apply {
-                    arguments = Bundle().apply {
-                        putString(ARG_PARAM1, param1)
-                        putString(ARG_PARAM2, param2)
-                    }
+                    arguments = Bundle().apply {}
                 }
     }
 }
