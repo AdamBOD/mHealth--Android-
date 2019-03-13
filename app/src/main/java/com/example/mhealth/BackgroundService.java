@@ -225,13 +225,13 @@ public class BackgroundService extends Service {
                                 logData("Resetting Data");
                                 watchService.setSensorRequest("Reset");
                                 watchService.findPeers();
-
-                                compileDailyData();
                             }
                         }
                     } else {
                         if (currentMinutes == 30 || currentMinutes == 58) {
                             checkExercise = true;
+                        } else if (currentMinutes == 59) {
+                            compileDailyData();
                         }
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(1));
                     }
@@ -274,72 +274,72 @@ public class BackgroundService extends Service {
                 watchService.findPeers();
             }
         }
+    }
 
-        public void compileDailyData () {
-            logData("Compiling Daily Data");
-            Realm.init(getApplicationContext());
-            RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
-                    .deleteRealmIfMigrationNeeded()
-                    .name("mHealth.realm")
-                    .schemaVersion(0)
-                    .build();
-            Realm.setDefaultConfiguration(realmConfiguration);
-            Realm realm = Realm.getDefaultInstance();
-            try {
-                SleepObject sleepObject = realm.where(SleepObject.class).sort("date").findAll().last();
-                ExerciseObject exerciseObject = realm.where(ExerciseObject.class).sort("date").findAll().last();
-                long dayinMilliseconds = 1000 * 60 *60 *24;
-                Date endDate = new Date();
-                Date startDate = new Date(endDate.getTime() - dayinMilliseconds);
-                final RealmResults<HeartrateObject> heartrateResults = realm.where(HeartrateObject.class).between("date", startDate, endDate).findAll();
+    public void compileDailyData () {
+        logData("Compiling Daily Data");
+        Realm.init(getApplicationContext());
+        RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
+                .deleteRealmIfMigrationNeeded()
+                .name("mHealth.realm")
+                .schemaVersion(0)
+                .build();
+        Realm.setDefaultConfiguration(realmConfiguration);
+        Realm realm = Realm.getDefaultInstance();
+        try {
+            SleepObject sleepObject = realm.where(SleepObject.class).sort("date").findAll().last();
+            ExerciseObject exerciseObject = realm.where(ExerciseObject.class).sort("date").findAll().last();
+            long dayinMilliseconds = 1000 * 60 *60 *24;
+            Date endDate = new Date();
+            Date startDate = new Date(endDate.getTime() - dayinMilliseconds);
+            final RealmResults<HeartrateObject> heartrateResults = realm.where(HeartrateObject.class).between("time", startDate, endDate).findAll();
 
-                int minHeartrate = 0;
-                int maxHeartrate = 0;
-                int averageHeartrate = 0;
-                for (int i=0; i < heartrateResults.size(); i++) {
-                    int heartrateResult = heartrateResults.get(i).getHeartrate();
-                    if (minHeartrate == 0 && maxHeartrate == 0) {
-                        maxHeartrate = heartrateResult;
-                        minHeartrate = heartrateResult;
-                    }
-
-                    if (heartrateResult > maxHeartrate) {
-                        maxHeartrate = heartrateResult;
-                    }
-
-                    if (heartrateResult < minHeartrate) {
-                        minHeartrate = heartrateResult;
-                    }
-
-                    averageHeartrate += heartrateResult;
+            int minHeartrate = 0;
+            int maxHeartrate = 0;
+            int averageHeartrate = 0;
+            for (int i=0; i < heartrateResults.size(); i++) {
+                int heartrateResult = heartrateResults.get(i).getHeartrate();
+                if (minHeartrate == 0 && maxHeartrate == 0) {
+                    maxHeartrate = heartrateResult;
+                    minHeartrate = heartrateResult;
                 }
 
-                averageHeartrate = averageHeartrate / heartrateResults.size();
+                if (heartrateResult > maxHeartrate) {
+                    maxHeartrate = heartrateResult;
+                }
 
-                final HealthDataObject healthDataObject = new HealthDataObject(minHeartrate, maxHeartrate,
-                        averageHeartrate, exerciseObject.getSteps(), exerciseObject.getCaloriesBurned(),
-                        sleepObject.getDuration(), new Date());
+                if (heartrateResult < minHeartrate) {
+                    minHeartrate = heartrateResult;
+                }
 
-                logData("Daily Data Object: " + healthDataObject.toString());
-                realm.executeTransaction(new Realm.Transaction() {
-                    @Override
-                    public void execute (Realm realm) {
-                        realm.copyToRealmOrUpdate(healthDataObject);
-                    }
-                });
-
-                final AverageHeartrateObject averageHeartrateObject = new AverageHeartrateObject(averageHeartrate,
-                        minHeartrate, maxHeartrate, new Date());
-                realm.executeTransaction(new Realm.Transaction() {
-                    @Override
-                    public void execute (Realm realm) {
-                        realm.copyToRealmOrUpdate(averageHeartrateObject);
-                    }
-                });
-                realm.close();
-            } catch (RuntimeException err) {
-                logData("Error getting daily data (" + err.getMessage() + ")");
+                averageHeartrate += heartrateResult;
             }
+
+            averageHeartrate = averageHeartrate / heartrateResults.size();
+
+            final HealthDataObject healthDataObject = new HealthDataObject(minHeartrate, maxHeartrate,
+                    averageHeartrate, exerciseObject.getSteps(), exerciseObject.getCaloriesBurned(),
+                    sleepObject.getDuration(), new Date());
+
+            logData("Daily Data Object: " + healthDataObject.toString());
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute (Realm realm) {
+                    realm.copyToRealmOrUpdate(healthDataObject);
+                }
+            });
+
+            final AverageHeartrateObject averageHeartrateObject = new AverageHeartrateObject(averageHeartrate,
+                    minHeartrate, maxHeartrate, new Date());
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute (Realm realm) {
+                    realm.copyToRealmOrUpdate(averageHeartrateObject);
+                }
+            });
+            realm.close();
+        } catch (RuntimeException err) {
+            logData("Error getting daily data (" + err.getMessage() + ")");
         }
     }
 

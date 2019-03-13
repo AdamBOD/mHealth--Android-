@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadLocalRandom
 import com.samsung.accessory.safiletransfer.a.i
 import android.view.MotionEvent
 import com.github.mikephil.charting.listener.ChartTouchListener
+import io.realm.RealmResults
 
 
 /**
@@ -36,7 +37,7 @@ import com.github.mikephil.charting.listener.ChartTouchListener
  *
  */
 class HeartFragment : Fragment() {
-
+    private var healthDataObjects: RealmResults<HealthDataObject>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
@@ -60,10 +61,13 @@ class HeartFragment : Fragment() {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun createChart () {
+        healthDataObjects = MainActivity.getHistoricalData()
         val values = ArrayList<Entry>()
-        for (i in 0..50) {
-            values.add(Entry(i.toFloat(), ThreadLocalRandom.current().nextInt(50, 90 + 1).toFloat()))
+        for (i in 0..healthDataObjects!!.size - 1) {
+            val entry = Entry(i.toFloat(), healthDataObjects!![i]!!.averageHeartrate.toFloat(), healthDataObjects!![i]!!.date.toString())
+            values.add(entry)
         }
+        values.add (Entry(4f, 65f, "02/03"))
         val lineData = LineDataSet (values, "Heart Rate")
         lineData.fillColor = Color.parseColor("#1976D2")
         lineData.color = Color.parseColor("#1976D2")

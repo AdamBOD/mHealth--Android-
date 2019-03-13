@@ -80,4 +80,12 @@ public class HealthDataObject extends RealmObject {
     public void setSleep(long sleep) {
         this.sleep = sleep;
     }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
 }

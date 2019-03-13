@@ -18,6 +18,7 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.listener.ChartTouchListener
 import com.github.mikephil.charting.listener.OnChartGestureListener
+import io.realm.RealmResults
 import kotlinx.android.synthetic.main.fragment_steps.*
 import java.util.concurrent.ThreadLocalRandom
 
@@ -31,6 +32,7 @@ import java.util.concurrent.ThreadLocalRandom
  *
  */
 class StepsFragment : Fragment() {
+    private var healthDataObjects: RealmResults<HealthDataObject>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,10 +52,13 @@ class StepsFragment : Fragment() {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun createChart () {
+        healthDataObjects = MainActivity.getHistoricalData()
         val values = ArrayList<Entry>()
-        for (i in 0..50) {
-            values.add(Entry(i.toFloat(), ThreadLocalRandom.current().nextInt(100, 15000 + 1).toFloat()))
+        for (i in 0..healthDataObjects!!.size - 1) {
+            val entry = Entry(i.toFloat(), healthDataObjects!![i]!!.stepsTaken.toFloat(), healthDataObjects!![i]!!.date.toString())
+            values.add(entry)
         }
+        values.add (Entry(4f, 6500f, "02/03"))
         val lineData = LineDataSet (values, "Steps Taken")
         lineData.fillColor = Color.parseColor("#1976D2")
         lineData.color = Color.parseColor("#1976D2")

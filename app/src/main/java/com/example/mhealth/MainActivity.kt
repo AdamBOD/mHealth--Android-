@@ -31,6 +31,8 @@ class MainActivity : AppCompatActivity() {
     private val sleepFragment = SleepFragment.newInstance()
     private var backgroundService: BackgroundService? = null
 
+    //public var healthDataResults: RealmResults<HealthDataObject>? = null
+
     private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
         when (item.itemId) {
             R.id.navigation_home -> {
@@ -58,6 +60,32 @@ class MainActivity : AppCompatActivity() {
         false
     }
 
+    companion object {
+        var healthDataResults: RealmResults<HealthDataObject>? = null
+
+        private fun fetchHistoricalData() {
+            val realmConfiguration = RealmConfiguration.Builder()
+                    .deleteRealmIfMigrationNeeded()
+                    .name("mHealth.realm")
+                    .schemaVersion(0)
+                    .build()
+            Realm.setDefaultConfiguration(realmConfiguration)
+            val realm = Realm.getDefaultInstance()
+            var healthDataObjects: RealmResults<HealthDataObject>? = null
+
+            try {
+                healthDataObjects = realm.where(HealthDataObject::class.java).sort("date").findAll()
+                healthDataResults = healthDataObjects
+            } catch (err: RuntimeException) {
+                logData("Error getting historical data (" + err.message + ")")
+            }
+        }
+
+        fun getHistoricalData() : RealmResults<HealthDataObject>? {
+            return healthDataResults
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -72,7 +100,7 @@ class MainActivity : AppCompatActivity() {
         openFragment(homeFragment)
 
         Realm.init(applicationContext)
-        val realmConfiguration = RealmConfiguration.Builder()
+        /*val realmConfiguration = RealmConfiguration.Builder()
                 .deleteRealmIfMigrationNeeded()
                 .name("mHealth.realm")
                 .schemaVersion(0)
@@ -83,7 +111,10 @@ class MainActivity : AppCompatActivity() {
         val r = realm.where(HealthDataObject::class.java)
                 .findAll()
 
-        logData("Health Data: " + r.toString())
+        logData("Health Data: " + r.toString())*/
+
+        //healthDataObjects = fetchHistoricalData()
+        fetchHistoricalData()
 
         val navigation = findViewById<View>(R.id.navigation) as BottomNavigationView
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
@@ -102,5 +133,4 @@ class MainActivity : AppCompatActivity() {
         transaction.replace(R.id.container, fragment)
         transaction.commit()
     }
-
 }
