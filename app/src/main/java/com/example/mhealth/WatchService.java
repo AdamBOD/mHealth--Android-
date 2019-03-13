@@ -31,6 +31,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.Calendar;
 
 import androidx.annotation.RequiresApi;
 import io.realm.Realm;
@@ -253,27 +254,36 @@ public class WatchService extends SAAgentV2 {
                             Gson g = new Gson();
                             ExerciseData exerciseData = g.fromJson(message, ExerciseData.class);
                             boolean addObject = false;
+                            ExerciseObject exerciseObject;
                             if (exerciseData.getStepCount() < lastStepCount) {
-                                addObject = true;
+                                SharedPreferences preferencesEditor = getApplicationContext().getSharedPreferences("mHealth", MODE_PRIVATE);
+                                String lastResetString = preferencesEditor.getString("exerciseReset", new Date().toString());
+                                if (new Date().getDay() == new Date(lastResetString).getDay()) {
+                                    addObject = true;
+                                } else {
+                                    lastStepCount += exerciseData.getStepCount();
+                                    lastCalories += exerciseData.getCalories();
+                                }
 
-                                ExerciseObject exerciseObject = new ExerciseObject(
+                                exerciseObject = new ExerciseObject(
                                         lastStepCount,
                                         lastCalories,
                                         new Date());
                                 realmDBHandler.addToDB(exerciseObject);
+                            } else {
+                                lastStepCount = (int) exerciseData.getStepCount();
+                                lastCalories = exerciseData.getCalories();
+
+                                previousData.setStepsTaken(lastStepCount);
+                                previousData.setCaloriesBurned(lastCalories);
+
+                                realmDBHandler.setHealthData(previousData);
+
+                                exerciseObject = new ExerciseObject(
+                                        lastStepCount,
+                                        lastCalories,
+                                        new Date());
                             }
-                            lastStepCount = (int) exerciseData.getStepCount();
-                            lastCalories = exerciseData.getCalories();
-
-                            previousData.setStepsTaken(lastStepCount);
-                            previousData.setCaloriesBurned(lastCalories);
-
-                            realmDBHandler.setHealthData(previousData);
-
-                            ExerciseObject exerciseObject = new ExerciseObject(
-                                    lastStepCount,
-                                    lastCalories,
-                                    new Date());
 
                             updateData("Steps", String.valueOf(exerciseObject.getSteps()));
                             updateData("Calories", String.valueOf((int) Math.round(exerciseObject.getCaloriesBurned())));
@@ -299,12 +309,18 @@ public class WatchService extends SAAgentV2 {
                             if (lastSleepStatus != null) {
                                 if (!lastSleepStatus.equals(currentStatus)) {
                                     if (lastSleepStatus.equals("ASLEEP")) {
-                                        long duration = ((sleepData.getTimestamp() - lastSleepTimestamp) / 1000) / 60;
-                                        if (duration > 20) {
-                                            logData("Duration of Sleep: " + String.valueOf(duration));
-                                            SleepObject sleepObject = new SleepObject(duration, new Date());
-                                            updateData("Sleep", String.valueOf(sleepObject.getDuration()));
-                                            realmDBHandler.addToDB(sleepObject);
+                                        if (Calendar.getInstance().getTimeInMillis() - sleepData.getTimestamp() >= 60000) {
+                                            long duration = ((sleepData.getTimestamp() - lastSleepTimestamp) / 1000) / 60;
+                                            if (duration > 20) {
+                                                logData("Duration of Sleep: " + String.valueOf(duration));
+                                                SleepObject sleepObject = new SleepObject(duration, new Date());
+                                                updateData("Sleep", String.valueOf(sleepObject.getDuration()));
+                                                realmDBHandler.addToDB(sleepObject);
+                                            }
+
+                                            lastSleepStatus = currentStatus;
+                                            previousData.setSleepStatus(lastSleepStatus);
+                                            realmDBHandler.setHealthData(previousData);
                                         }
                                     } else if (lastSleepStatus.equals("AWAKE")) {
                                         lastSleepStatus = currentStatus;
@@ -317,15 +333,11 @@ public class WatchService extends SAAgentV2 {
                                         logData("Error getting Sleep data");
                                     }
                                 }
-                                lastSleepStatus = currentStatus;
-                                previousData.setSleepStatus(lastSleepStatus);
-                                realmDBHandler.setHealthData(previousData);
                             } else {
                                 lastSleepStatus = currentStatus;
                                 previousData.setSleepStatus(lastSleepStatus);
                                 realmDBHandler.setHealthData(previousData);
                             }
-
                         }
                     } else {
                         if (getSensorRequest().equals("Heart")) {
@@ -372,6 +384,25 @@ public class WatchService extends SAAgentV2 {
         if (mConnectionHandler != null && data != null) {
             try {
                 mConnectionHandler.send(WATCH_CHANNEL_ID, data.getBytes());
+                if (getSensorRequest().equals("Heart")) {
+                    retryConnection = true;
+                    Runnable runnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!receivedData && retryConnection) {
+                                logData("Cancelling heart rate and retrying");
+                                setSensorRequest("Retry");
+                                sendData(getSensorRequest());
+                                retryConnection = false;
+                            } else if (!receivedData && !retryConnection) {
+                                logData("Cancelling heart rate");
+                                setSensorRequest("StopHeart");
+                            }
+                        }
+                    };
+
+                    setTimeout(runnable, 30000);
+                }
                 logData("Querying: " + getSensorRequest());
                 receivedData = false;
                 retvalue = true;
@@ -383,7 +414,21 @@ public class WatchService extends SAAgentV2 {
         return retvalue;
     }
 
-    public boolean closeConnection() {
+
+    //Async Timeout code from https://stackoverflow.com/questions/26311470/what-is-the-equivalent-of-javascript-settimeout-in-java
+    private static void setTimeout(Runnable runnable, int delay){
+        new Thread(() -> {
+            try {
+                Thread.sleep(delay);
+                runnable.run();
+            }
+            catch (Exception e){
+                System.err.println(e);
+            }
+        }).start();
+    }
+
+    private boolean closeConnection() {
         if (mConnectionHandler != null) {
             mConnectionHandler.close();
             mConnectionHandler = null;

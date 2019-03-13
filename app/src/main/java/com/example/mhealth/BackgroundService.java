@@ -142,7 +142,6 @@ public class BackgroundService extends Service {
     }
 
     private void checkExerciseReset () {
-        logData("Checking Exercise Reset");
         SharedPreferences preferencesEditor = getSharedPreferences("mHealth", MODE_PRIVATE);
         String lastResetString = preferencesEditor.getString("exerciseReset", new Date().toString());
 
@@ -230,7 +229,7 @@ public class BackgroundService extends Service {
                     } else {
                         if (currentMinutes == 30 || currentMinutes == 58) {
                             checkExercise = true;
-                        } else if (currentMinutes == 59) {
+                        } else if (currentMinutes == 59 && currentHours == 0) {
                             compileDailyData();
                         }
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(1));
