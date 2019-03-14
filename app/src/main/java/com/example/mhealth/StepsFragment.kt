@@ -33,6 +33,10 @@ import java.util.concurrent.ThreadLocalRandom
  */
 class StepsFragment : Fragment() {
     private var healthDataObjects: RealmResults<HealthDataObject>? = null
+    private var sumSteps: Int = 0
+    private var averageSteps: Int = 0
+    private var maxSteps: Int = 0
+    private var minSteps: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +61,22 @@ class StepsFragment : Fragment() {
         for (i in 0..healthDataObjects!!.size - 1) {
             val entry = Entry(i.toFloat(), healthDataObjects!![i]!!.stepsTaken.toFloat(), healthDataObjects!![i]!!.date.toString())
             values.add(entry)
+
+            var dailySteps: Int = healthDataObjects!![i]!!.stepsTaken.toInt()
+            sumSteps += dailySteps
+
+            if (minSteps == 0 && maxSteps == 0) {
+                minSteps = dailySteps
+                maxSteps = dailySteps
+            }
+
+            if (dailySteps > maxSteps) {
+                maxSteps = dailySteps
+            }
+
+            if (dailySteps < minSteps) {
+                minSteps = dailySteps
+            }
         }
         values.add (Entry(4f, 6500f, "02/03"))
         val lineData = LineDataSet (values, "Steps Taken")

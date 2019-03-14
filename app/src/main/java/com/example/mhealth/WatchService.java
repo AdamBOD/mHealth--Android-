@@ -52,7 +52,9 @@ public class WatchService extends SAAgentV2 {
     private String sensorRequest;
 
     private int lastStepCount;
+    private int lastRefreshedStepCount;
     private double lastCalories;
+    private double lastRefreshedCalories;
     private String exerciseObjectID;
 
     private String lastSleepStatus;
@@ -102,6 +104,8 @@ public class WatchService extends SAAgentV2 {
                     previousDataObject.getExerciseObjectUID(),
                     previousDataObject.getSleepStatus(),
                     previousDataObject.getSleepTimestamp(),
+                    previousDataObject.getRefreshedStepsTaken(),
+                    previousDataObject.getRefreshedCaloriesBurned(),
                     new Date());
 
             lastStepCount = previousData.getStepsTaken();
@@ -109,15 +113,16 @@ public class WatchService extends SAAgentV2 {
             exerciseObjectID = previousData.getExerciseObjectUID();
             lastSleepStatus = previousData.getSleepStatus();
             lastSleepTimestamp = previousData.getSleepTimestamp();
-
-            logData (String.valueOf(previousData.getSleepStatus()));
+            lastRefreshedStepCount = previousDataObject.getRefreshedStepsTaken();
+            lastRefreshedCalories = previousDataObject.getRefreshedCaloriesBurned();
         } else {
             lastStepCount = 0;
             lastCalories = 0;
             exerciseObjectID = null;
             lastSleepStatus = null;
             lastSleepTimestamp = 0;
-
+            lastRefreshedStepCount = 0;
+            lastRefreshedCalories = 0;
             previousData = new TempHealthDataObject();
         }
     }
@@ -255,11 +260,27 @@ public class WatchService extends SAAgentV2 {
                             if (exerciseData.getStepCount() < lastStepCount) {
                                 SharedPreferences preferencesEditor = getApplicationContext().getSharedPreferences("mHealth", MODE_PRIVATE);
                                 String lastResetString = preferencesEditor.getString("exerciseReset", new Date().toString());
-                                if (new Date().getDay() == new Date(lastResetString).getDay()) {
+                                if (new Date().getDate() != new Date(lastResetString).getDate()) {
                                     addObject = true;
+                                    lastStepCount = (int) exerciseData.getStepCount();
+                                    lastCalories = exerciseData.getCalories();
+
+                                    lastRefreshedStepCount = 0;
+                                    lastRefreshedCalories = 0;
                                 } else {
-                                    lastStepCount += exerciseData.getStepCount();
-                                    lastCalories += exerciseData.getCalories();
+                                    if (lastRefreshedStepCount == 0 || lastRefreshedCalories == 0) {
+                                        lastStepCount += exerciseData.getStepCount();
+                                        lastCalories += exerciseData.getCalories();
+
+                                        lastRefreshedStepCount = (int) exerciseData.getStepCount();
+                                        lastRefreshedCalories = exerciseData.getCalories();
+                                    } else {
+                                        lastStepCount += (exerciseData.getStepCount() - lastRefreshedStepCount);
+                                        lastCalories += (exerciseData.getCalories() - lastRefreshedCalories);
+
+                                        lastRefreshedStepCount = (int) exerciseData.getStepCount();
+                                        lastRefreshedCalories = exerciseData.getCalories();
+                                    }
                                 }
 
                                 exerciseObject = new ExerciseObject(
@@ -306,7 +327,7 @@ public class WatchService extends SAAgentV2 {
                             if (lastSleepStatus != null) {
                                 if (!lastSleepStatus.equals(currentStatus)) {
                                     if (lastSleepStatus.equals("ASLEEP")) {
-                                        if (Calendar.getInstance().getTimeInMillis() - sleepData.getTimestamp() >= 60000) {
+                                        if (new Date().getTime() - sleepData.getTimestamp() >= 60000) {
                                             long duration = ((sleepData.getTimestamp() - lastSleepTimestamp) / 1000) / 60;
                                             if (duration > 20) {
                                                 logData("Duration of Sleep: " + String.valueOf(duration));
@@ -381,12 +402,11 @@ public class WatchService extends SAAgentV2 {
                         @Override
                         public void run() {
                             if (!receivedData && retryConnection) {
-                                logData("Cancelling heart rate and retrying");
                                 setSensorRequest("Retry");
                                 sendData(getSensorRequest());
                                 retryConnection = false;
                             } else if (!receivedData && !retryConnection) {
-                                logData("Cancelling heart rate");
+                                logData("Cancelling heart rate check");
                                 setSensorRequest("StopHeart");
                             }
                         }

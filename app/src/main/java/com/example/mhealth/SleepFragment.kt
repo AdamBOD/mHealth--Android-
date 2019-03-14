@@ -33,6 +33,10 @@ import java.util.concurrent.ThreadLocalRandom
  */
 class SleepFragment : Fragment() {
     private var healthDataObjects: RealmResults<HealthDataObject>? = null
+    private var sumSleep: Int = 0
+    private var averageSleep: Int = 0
+    private var maxSleep: Int = 0
+    private var minSleep: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +61,26 @@ class SleepFragment : Fragment() {
         for (i in 0..healthDataObjects!!.size - 1) {
             val entry = Entry(i.toFloat(), healthDataObjects!![i]!!.sleep.toFloat(), healthDataObjects!![i]!!.date.toString())
             values.add(entry)
+
+            var dailySleep: Int = healthDataObjects!![i]!!.sleep.toInt()
+            sumSleep += dailySleep
+
+            if (minSleep == 0 && maxSleep == 0) {
+                minSleep = dailySleep
+                maxSleep = dailySleep
+            }
+
+            if (dailySleep > maxSleep) {
+                maxSleep = dailySleep
+            }
+
+            if (dailySleep < minSleep) {
+                minSleep = dailySleep
+            }
         }
+
+        averageSleep = sumSleep / healthDataObjects!!.size
+
         values.add (Entry(4f, 450f, "02/03"))
         val lineData = LineDataSet (values, "Time Slept")
         lineData.fillColor = Color.parseColor("#1976D2")

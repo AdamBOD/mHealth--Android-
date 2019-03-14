@@ -38,6 +38,11 @@ import io.realm.RealmResults
  */
 class HeartFragment : Fragment() {
     private var healthDataObjects: RealmResults<HealthDataObject>? = null
+    private var sumHeartrate: Int = 0
+    private var averageHeartrate: Int = 0
+    private var maxHeartrate: Int = 0
+    private var minHeartrate: Int = 0
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
@@ -66,6 +71,22 @@ class HeartFragment : Fragment() {
         for (i in 0..healthDataObjects!!.size - 1) {
             val entry = Entry(i.toFloat(), healthDataObjects!![i]!!.averageHeartrate.toFloat(), healthDataObjects!![i]!!.date.toString())
             values.add(entry)
+
+            var dailyHeartrate: Int = healthDataObjects!![i]!!.averageHeartrate.toInt()
+            sumHeartrate += dailyHeartrate
+
+            if (minHeartrate == 0 && maxHeartrate == 0) {
+                minHeartrate = dailyHeartrate
+                maxHeartrate = dailyHeartrate
+            }
+
+            if (dailyHeartrate > maxHeartrate) {
+                maxHeartrate = dailyHeartrate
+            }
+
+            if (dailyHeartrate < minHeartrate) {
+                minHeartrate = dailyHeartrate
+            }
         }
         values.add (Entry(4f, 65f, "02/03"))
         val lineData = LineDataSet (values, "Heart Rate")

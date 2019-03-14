@@ -33,6 +33,10 @@ import java.util.concurrent.ThreadLocalRandom
  */
 class CaloriesFragment : Fragment() {
     private var healthDataObjects: RealmResults<HealthDataObject>? = null
+    private var sumCaloriesBurned: Int = 0
+    private var averageCaloriesBurned: Int = 0
+    private var maxCaloriesBurned: Int = 0
+    private var minCaloriesBurned: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +61,26 @@ class CaloriesFragment : Fragment() {
         for (i in 0..healthDataObjects!!.size - 1) {
             val entry = Entry(i.toFloat(), healthDataObjects!![i]!!.caloriesBurned.toFloat(), healthDataObjects!![i]!!.date.toString())
             values.add(entry)
+
+            var dailyCaloriesBurned: Int = healthDataObjects!![i]!!.caloriesBurned.toInt()
+            sumCaloriesBurned += dailyCaloriesBurned
+
+            if (minCaloriesBurned == 0 && maxCaloriesBurned == 0) {
+                minCaloriesBurned = dailyCaloriesBurned
+                maxCaloriesBurned = dailyCaloriesBurned
+            }
+
+            if (dailyCaloriesBurned > maxCaloriesBurned) {
+                maxCaloriesBurned = dailyCaloriesBurned
+            }
+
+            if (dailyCaloriesBurned < minCaloriesBurned) {
+                minCaloriesBurned = dailyCaloriesBurned
+            }
         }
+
+        averageCaloriesBurned = sumCaloriesBurned / healthDataObjects!!.size
+
         values.add (Entry(4f, 250f, "02/03"))
         val lineData = LineDataSet (values, "Calories Burned")
         lineData.fillColor = Color.parseColor("#1976D2")

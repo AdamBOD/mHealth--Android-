@@ -91,6 +91,7 @@ public class BackgroundService extends Service {
                 .setSmallIcon(R.mipmap.ic_small)
                 .setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), R.mipmap.ic_launcher))
                 .setPriority(Notification.PRIORITY_MIN)
+                .setShowWhen(false)
                 .setContentIntent(pendingIntent)
                 .build();
 
@@ -157,7 +158,7 @@ public class BackgroundService extends Service {
         if (lastResetString != null) {
             Date lastReset = new Date(lastResetString);
 
-            if (lastReset.getDay() != new Date().getDay()) {
+            if (lastReset.getDate() != new Date().getDate()) {
                 watchService.setSensorRequest("Reset");
                 watchService.findPeers();
 
@@ -274,7 +275,6 @@ public class BackgroundService extends Service {
         };
 
         private void startScheduler () {
-            logData("Scheduler started");
             runnable.run();
             if (watchService != null) {
                 watchService.findPeers();
