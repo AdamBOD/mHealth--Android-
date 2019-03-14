@@ -88,6 +88,11 @@ class HeartFragment : Fragment() {
                 minHeartrate = dailyHeartrate
             }
         }
+
+        if (healthDataObjects!!.size > 0) {
+            averageHeartrate = sumHeartrate / healthDataObjects!!.size
+        }
+
         values.add (Entry(4f, 65f, "02/03"))
         val lineData = LineDataSet (values, "Heart Rate")
         lineData.fillColor = Color.parseColor("#1976D2")
@@ -169,6 +174,10 @@ class HeartFragment : Fragment() {
 
         heart_Chart.axisLeft.limitLines.add(0, averageLimit)
         heart_Chart.axisLeft.setDrawLimitLinesBehindData(true)
+
+        average_Heart.text = "$averageHeartrate BPM"
+        min_Heart.text = "$minHeartrate BPM"
+        max_Heart.text = "$maxHeartrate BPM"
     }
 
     interface OnFragmentInteractionListener {

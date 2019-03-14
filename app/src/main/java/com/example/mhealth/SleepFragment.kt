@@ -79,7 +79,9 @@ class SleepFragment : Fragment() {
             }
         }
 
-        averageSleep = sumSleep / healthDataObjects!!.size
+        if (healthDataObjects!!.size > 0) {
+            averageSleep = sumSleep / healthDataObjects!!.size
+        }
 
         values.add (Entry(4f, 450f, "02/03"))
         val lineData = LineDataSet (values, "Time Slept")
@@ -162,6 +164,10 @@ class SleepFragment : Fragment() {
 
         sleep_Chart.axisLeft.limitLines.add(0, averageLimit)
         sleep_Chart.axisLeft.setDrawLimitLinesBehindData(true)
+
+        average_Sleep.text = "$averageSleep Hours And Minutes"
+        min_Sleep.text = "$minSleep Hours And Minutes"
+        max_Sleep.text = "$maxSleep Hours And Minutes"
     }
     /**
      * This interface must be implemented by activities that contain this

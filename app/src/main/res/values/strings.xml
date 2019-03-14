@@ -12,4 +12,8 @@
     <string name="tile_steps">Steps Taken</string>
     <string name="tile_calories">Calories Burned</string>
     <string name="tile_sleep">Sleep</string>
+
+    <string name="average">Average: </string>
+    <string name="minimum">Minimum: </string>
+    <string name="maximum">Maximum: </string>
 </resources>

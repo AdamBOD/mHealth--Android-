@@ -78,6 +78,11 @@ class StepsFragment : Fragment() {
                 minSteps = dailySteps
             }
         }
+
+        if (healthDataObjects!!.size > 0) {
+            averageSteps = sumSteps / healthDataObjects!!.size
+        }
+
         values.add (Entry(4f, 6500f, "02/03"))
         val lineData = LineDataSet (values, "Steps Taken")
         lineData.fillColor = Color.parseColor("#1976D2")
@@ -159,6 +164,10 @@ class StepsFragment : Fragment() {
 
         steps_Chart.axisLeft.limitLines.add(0, averageLimit)
         steps_Chart.axisLeft.setDrawLimitLinesBehindData(true)
+
+        average_Steps.text = "$averageSteps Steps"
+        min_Steps.text = "$minSteps Steps"
+        max_Steps.text = "$maxSteps Steps"
     }
 
     /**

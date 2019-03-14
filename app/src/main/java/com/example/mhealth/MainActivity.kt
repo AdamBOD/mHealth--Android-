@@ -50,7 +50,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         var healthDataResults: RealmResults<HealthDataObject>? = null
-        val dataSummarizer = DataSummarizer()
 
         private fun fetchHistoricalData() {
             val realmConfiguration = RealmConfiguration.Builder()
@@ -72,10 +71,6 @@ class MainActivity : AppCompatActivity() {
 
         fun getHistoricalData() : RealmResults<HealthDataObject>? {
             return healthDataResults
-        }
-
-        fun summarizeData(intArray: ArrayList<Int>) : DataSummary {
-            return dataSummarizer.summarizeInt(intArray)
         }
     }
 

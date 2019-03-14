@@ -79,7 +79,9 @@ class CaloriesFragment : Fragment() {
             }
         }
 
-        averageCaloriesBurned = sumCaloriesBurned / healthDataObjects!!.size
+        if (healthDataObjects!!.size > 0) {
+            averageCaloriesBurned = sumCaloriesBurned / healthDataObjects!!.size
+        }
 
         values.add (Entry(4f, 250f, "02/03"))
         val lineData = LineDataSet (values, "Calories Burned")
@@ -162,6 +164,10 @@ class CaloriesFragment : Fragment() {
 
         calories_Chart.axisLeft.limitLines.add(0, averageLimit)
         calories_Chart.axisLeft.setDrawLimitLinesBehindData(true)
+
+        average_Calories.text = "$averageCaloriesBurned kCal"
+        min_Calories.text = "$minCaloriesBurned kCal"
+        max_Calories.text = "$maxCaloriesBurned kCal"
     }
 
     /**
