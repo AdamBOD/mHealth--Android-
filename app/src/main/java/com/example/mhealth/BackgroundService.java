@@ -56,6 +56,7 @@ public class BackgroundService extends Service {
             watchService = (WatchService) agent;
             QueryScheduler queryScheduler = new QueryScheduler();
             queryScheduler.startScheduler();
+            checkExerciseReset();
         }
 
         @Override
@@ -78,7 +79,6 @@ public class BackgroundService extends Service {
         logData("Background Service Started");
         broadcaster = new Broadcaster();
         getTileData();
-        checkExerciseReset();
         serviceRunning = true;
 
         //Foreground Service code from https://codinginflow.com/tutorials/android/foreground-service
@@ -238,7 +238,7 @@ public class BackgroundService extends Service {
                     } else {
                         if (currentMinutes == 30 || currentMinutes == 58) {
                             checkExercise = true;
-                        } else if (currentMinutes == 59 && currentHours == 0) {
+                        } else if (currentMinutes == 59 && currentHours == 23) {
                             compileDailyData();
                         }
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(1));

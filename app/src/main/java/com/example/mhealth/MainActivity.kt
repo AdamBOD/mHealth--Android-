@@ -77,8 +77,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (!BackgroundService.serviceRunning) {
-            logData(BackgroundService.serviceRunning.toString())
+        if (!BackgroundService.serviceRunning) { //TODO CHANGE THIS CHECK - ALWAYS FALSE ATM
             val intent = Intent(this, BackgroundService::class.java)
             startService(intent)
         }
