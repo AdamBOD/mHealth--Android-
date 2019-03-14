@@ -1,26 +1,16 @@
 package com.example.mhealth
 
-import android.app.Service
-import android.content.ComponentName
+import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.BottomNavigationView
 import android.support.v4.app.Fragment
 import android.support.v7.app.AppCompatActivity
-import android.view.MenuItem
 import android.view.View
-import android.widget.TextView
-import android.content.Intent
-import android.content.ServiceConnection
-import android.os.IBinder
-import android.util.Log
-import android.widget.Toast
 import com.androidnetworking.AndroidNetworking
 import com.example.mhealth.BackgroundService.logData
 import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.RealmResults
-
-
 
 
 class MainActivity : AppCompatActivity() {
@@ -30,8 +20,6 @@ class MainActivity : AppCompatActivity() {
     private val caloriesFragment = CaloriesFragment.newInstance()
     private val sleepFragment = SleepFragment.newInstance()
     private var backgroundService: BackgroundService? = null
-
-    //public var healthDataResults: RealmResults<HealthDataObject>? = null
 
     private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
         when (item.itemId) {

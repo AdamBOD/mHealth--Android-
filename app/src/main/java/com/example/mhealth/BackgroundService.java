@@ -1,14 +1,17 @@
 package com.example.mhealth;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Binder;
+import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.androidnetworking.AndroidNetworking;
 import com.androidnetworking.common.Priority;
@@ -22,14 +25,12 @@ import org.json.JSONObject;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import androidx.annotation.RequiresApi;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
-import io.realm.exceptions.RealmError;
-import io.realm.exceptions.RealmException;
 
 public class BackgroundService extends Service {
     public static boolean serviceRunning = false;
@@ -46,12 +47,13 @@ public class BackgroundService extends Service {
     private static int caloriesBurned = 0;
     private static long sleep = 0;
 
+    private String CHANNEL_ID = "mHealthChannel";
+
     private SAAgentV2.RequestAgentCallback watchAgentCallback = new SAAgentV2.RequestAgentCallback() {
         @Override
         public void onAgentAvailable(SAAgentV2 agent) {
-            Log.d("Agent Initialized", "Agent has been successfully initialized");
+            logData("Agent has been successfully initialized");
             watchService = (WatchService) agent;
-            watchService.sendData("Init");
             QueryScheduler queryScheduler = new QueryScheduler();
             queryScheduler.startScheduler();
         }
@@ -70,6 +72,7 @@ public class BackgroundService extends Service {
         SAAgentV2.requestAgent(getApplicationContext(), WatchService.class.getName(), watchAgentCallback);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         logData("Background Service Started");
@@ -77,22 +80,28 @@ public class BackgroundService extends Service {
         getTileData();
         checkExerciseReset();
         serviceRunning = true;
+
+        //Foreground Service code from https://codinginflow.com/tutorials/android/foreground-service
+        Intent serviceIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, serviceIntent, 0);
+
+        Notification serviceNotification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("mHealth")
+                .setContentText("Reduce stress")
+                .setSmallIcon(R.mipmap.ic_small)
+                .setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), R.mipmap.ic_launcher))
+                .setPriority(Notification.PRIORITY_MIN)
+                .setContentIntent(pendingIntent)
+                .build();
+
+        startForeground(1, serviceNotification);
+
         return START_STICKY;
     }
 
-    private final IBinder localBinder = new LocalBinder();
-
     @Override
     public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
-        logData("Service is bound");
-        return localBinder;
-    }
-
-    public class LocalBinder extends Binder {
-        public BackgroundService getService() {
-            return BackgroundService.this;
-        }
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
@@ -265,6 +274,7 @@ public class BackgroundService extends Service {
         };
 
         private void startScheduler () {
+            logData("Scheduler started");
             runnable.run();
             if (watchService != null) {
                 watchService.findPeers();
@@ -273,6 +283,11 @@ public class BackgroundService extends Service {
                 watchService.findPeers();
             }
         }
+    }
+
+    private void sendNotification (String title, String data) {
+        /*Notification notificationBuilder = new NotificationCompat.Builder(this)
+                .setAutoCancel((true));*/
     }
 
     public void compileDailyData () {

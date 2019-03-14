@@ -7,8 +7,6 @@ package com.example.mhealth;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Binder;
-import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 
@@ -33,7 +31,6 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.Calendar;
 
-import androidx.annotation.RequiresApi;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
@@ -366,12 +363,6 @@ public class WatchService extends SAAgentV2 {
         @Override
         protected void onServiceConnectionLost(int reason) {
             closeConnection();
-        }
-    }
-
-    public class LocalBinder extends Binder {
-        public WatchService getService() {
-            return WatchService.this;
         }
     }
 
