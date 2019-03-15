@@ -3,29 +3,24 @@ package com.example.mhealth
 import android.content.Context
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
+import com.github.mikephil.charting.components.LimitLine
+import com.github.mikephil.charting.components.LimitLine.LimitLabelPosition
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.components.LimitLine.LimitLabelPosition
-import com.github.mikephil.charting.components.LimitLine
-import kotlinx.android.synthetic.main.fragment_heart.*
-import android.support.v4.content.ContextCompat
-import android.graphics.drawable.Drawable
-import android.os.Build
-import androidx.annotation.RequiresApi
-import com.github.mikephil.charting.components.Description
-import com.github.mikephil.charting.listener.OnChartGestureListener
-import java.util.concurrent.ThreadLocalRandom
-import com.samsung.accessory.safiletransfer.a.i
-import android.view.MotionEvent
-import com.example.mhealth.BackgroundService.logData
 import com.github.mikephil.charting.listener.ChartTouchListener
+import com.github.mikephil.charting.listener.OnChartGestureListener
 import io.realm.RealmResults
+import kotlinx.android.synthetic.main.fragment_heart.*
 
 
 /**

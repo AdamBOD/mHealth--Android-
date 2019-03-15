@@ -1,6 +1,5 @@
 package com.example.mhealth
 
-import android.content.Context
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
@@ -20,7 +19,6 @@ import com.github.mikephil.charting.listener.ChartTouchListener
 import com.github.mikephil.charting.listener.OnChartGestureListener
 import io.realm.RealmResults
 import kotlinx.android.synthetic.main.fragment_steps.*
-import java.util.concurrent.ThreadLocalRandom
 
 /**
  * A simple [Fragment] subclass.
