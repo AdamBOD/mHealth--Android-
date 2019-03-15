@@ -88,7 +88,6 @@ class StepsFragment : Fragment() {
             averageSteps = sumSteps / healthDataObjects!!.size
         }
 
-        values.add (Entry(4f, 6500f, "02/03"))
         val lineData = LineDataSet (values, "Steps Taken")
         lineData.fillColor = Color.parseColor("#1976D2")
         lineData.color = Color.parseColor("#1976D2")

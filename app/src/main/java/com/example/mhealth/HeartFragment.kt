@@ -100,7 +100,6 @@ class HeartFragment : Fragment() {
             averageHeartrate = sumHeartrate / healthDataObjects!!.size
         }
 
-        values.add (Entry(4f, 65f, "02/03"))
         val lineData = LineDataSet (values, "Heart Rate")
         lineData.fillColor = Color.parseColor("#1976D2")
         lineData.color = Color.parseColor("#1976D2")

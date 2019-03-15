@@ -88,7 +88,6 @@ class CaloriesFragment : Fragment() {
             averageCaloriesBurned = sumCaloriesBurned / healthDataObjects!!.size
         }
 
-        values.add (Entry(4f, 250f, "02/03"))
         val lineData = LineDataSet (values, "Calories Burned")
         lineData.fillColor = Color.parseColor("#1976D2")
         lineData.color = Color.parseColor("#1976D2")

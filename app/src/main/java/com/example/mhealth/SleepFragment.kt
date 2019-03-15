@@ -88,7 +88,6 @@ class SleepFragment : Fragment() {
             averageSleep = sumSleep / healthDataObjects!!.size
         }
 
-        values.add (Entry(4f, 450f, "02/03"))
         val lineData = LineDataSet (values, "Time Slept")
         lineData.fillColor = Color.parseColor("#1976D2")
         lineData.color = Color.parseColor("#1976D2")
