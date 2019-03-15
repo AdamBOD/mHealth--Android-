@@ -381,21 +381,23 @@ public class BackgroundService extends Service {
             e.printStackTrace();
         }
 
-        AndroidNetworking.post("https://custom-logging-api.herokuapp.com/logs")
-                .addJSONObjectBody(jsonObject) // posting json
-                .setTag("")
-                .setPriority(Priority.MEDIUM)
-                .build()
-                .getAsJSONArray(new JSONArrayRequestListener() {
-                    @Override
-                    public void onResponse(JSONArray response) {
-                        // do anything with response
-                    }
-                    @Override
-                    public void onError(ANError error) {
-                        // handle error
-                    }
-                });
+        new Thread(() -> {
+            AndroidNetworking.post("https://custom-logging-api.herokuapp.com/logs")
+                    .addJSONObjectBody(jsonObject) // posting json
+                    .setTag("")
+                    .setPriority(Priority.MEDIUM)
+                    .build()
+                    .getAsJSONArray(new JSONArrayRequestListener() {
+                        @Override
+                        public void onResponse(JSONArray response) {
+                            // do anything with response
+                        }
+                        @Override
+                        public void onError(ANError error) {
+                            // handle error
+                        }
+                    });
+        }).start();
     }
 
     public class Broadcaster {
