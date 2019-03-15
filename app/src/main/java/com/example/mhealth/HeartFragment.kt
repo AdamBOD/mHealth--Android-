@@ -96,7 +96,6 @@ class HeartFragment : Fragment() {
             }
         }
 
-        logData ("HeartmList Size: " + healthDataObjects!!.size.toString())
         if (healthDataObjects!!.size > 0) {
             averageHeartrate = sumHeartrate / healthDataObjects!!.size
         }
@@ -173,7 +172,7 @@ class HeartFragment : Fragment() {
             }
         }
 
-        val averageLimit = LimitLine(60f, "Target")
+        val averageLimit = LimitLine(65f, "Target")
         averageLimit.lineWidth = 4f
         averageLimit.lineColor = Color.parseColor("#9E9E9E")
         averageLimit.enableDashedLine(30f, 10f, 0f)

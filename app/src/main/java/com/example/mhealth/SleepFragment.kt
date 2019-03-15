@@ -60,7 +60,7 @@ class SleepFragment : Fragment() {
         averageSleep = 0
         maxSleep = 0
         minSleep = 0
-        
+
         healthDataObjects = MainActivity.getHistoricalData()
         val values = ArrayList<Entry>()
         for (i in 0..healthDataObjects!!.size - 1) {
@@ -106,7 +106,7 @@ class SleepFragment : Fragment() {
         sleep_Chart.setDrawBorders(false)
         sleep_Chart.setDrawMarkers(false)
         sleep_Chart.disableScroll()
-        sleep_Chart.axisLeft.axisMinimum = 20f //TODO - Average minus certain amount
+        sleep_Chart.axisLeft.axisMinimum = 0f //TODO - Average minus certain amount
         sleep_Chart.xAxis.isEnabled = false
         sleep_Chart.axisLeft.isEnabled = true
         sleep_Chart.axisRight.isEnabled = false

@@ -241,6 +241,7 @@ public class BackgroundService extends Service {
                         if (currentMinutes == 1) {
                             if (currentHours == 0) {
                                 logData("Resetting Data");
+                                exerciseReset = true;
                                 watchService.setSensorRequest("Reset");
                                 watchService.findPeers();
                             }

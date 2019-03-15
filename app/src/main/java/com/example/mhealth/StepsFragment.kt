@@ -106,7 +106,7 @@ class StepsFragment : Fragment() {
         steps_Chart.setDrawBorders(false)
         steps_Chart.setDrawMarkers(false)
         steps_Chart.disableScroll()
-        steps_Chart.axisLeft.axisMinimum = 20f //TODO - Average minus certain amount
+        steps_Chart.axisLeft.axisMinimum = 0f //TODO - Average minus certain amount
         steps_Chart.xAxis.isEnabled = false
         steps_Chart.axisLeft.isEnabled = true
         steps_Chart.axisRight.isEnabled = false

@@ -226,6 +226,13 @@ public class WatchService extends SAAgentV2 {
             if (!receivedData) {
                 if (!message.equals("undefined")) {
                     if (!message.equals("Error getting data from watch.")) {
+                        if (message.equals("ExerciseReset")) {
+                            logData("Exercise Reset");
+                            setResetExercise(false);
+                            setSensorRequest("Exercise");
+                            findPeers();
+                            return;
+                        }
                         receivedData = true;
                         retryConnection = false;
                         JsonObject receivedObject = new JsonParser().parse(message).getAsJsonObject();
@@ -364,11 +371,6 @@ public class WatchService extends SAAgentV2 {
                                 realmDBHandler.setHealthData(previousData);
                             }
                         }
-                    } else if (message.equals("ExerciseReset")) {
-                        logData("Exercise Reset");
-                        setResetExercise(false);
-                        setSensorRequest("Exercise");
-                        findPeers();
                     } else {
                         if (getSensorRequest().equals("Heart")) {
                             if (!retryConnection) {
