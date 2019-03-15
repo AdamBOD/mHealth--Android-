@@ -19,6 +19,7 @@ import com.github.mikephil.charting.listener.ChartTouchListener
 import com.github.mikephil.charting.listener.OnChartGestureListener
 import io.realm.RealmResults
 import kotlinx.android.synthetic.main.fragment_sleep.*
+import com.example.mhealth.BackgroundService.sleepToString
 
 /**
  * A simple [Fragment] subclass.
@@ -167,9 +168,9 @@ class SleepFragment : Fragment() {
         sleep_Chart.axisLeft.limitLines.add(0, averageLimit)
         sleep_Chart.axisLeft.setDrawLimitLinesBehindData(true)
 
-        average_Sleep.text = "$averageSleep Hours And Minutes"
-        min_Sleep.text = "$minSleep Hours And Minutes"
-        max_Sleep.text = "$maxSleep Hours And Minutes"
+        average_Sleep.text = sleepToString(averageSleep.toLong())
+        min_Sleep.text = sleepToString(minSleep.toLong())
+        max_Sleep.text = sleepToString(maxSleep.toLong())
     }
     /**
      * This interface must be implemented by activities that contain this

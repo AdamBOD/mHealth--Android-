@@ -191,9 +191,13 @@ public class BackgroundService extends Service {
         appInForeground = appState;
     }
 
-    private static String sleepToString (long sleepDuration) {
-        long sleepMinutes = TimeUnit.MILLISECONDS.toMinutes(sleepDuration);
+    public static String sleepToString (long sleepDuration) {
+        long sleepMinutes = sleepDuration;
         String hoursString = " hours ";
+        if (sleepMinutes < 60) {
+            return ("0 hours "+ String.valueOf(sleepMinutes) + " minutes");
+        }
+
         if (sleepMinutes > 600) {
             hoursString = " hrs ";
         }
