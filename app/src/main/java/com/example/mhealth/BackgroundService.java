@@ -228,8 +228,6 @@ public class BackgroundService extends Service {
                     dataToBeCompiled = false;
                 }
 
-                logData(String.valueOf(currentHours));
-
                 if (watchService != null) {
                     if (exerciseReset) {
                         watchService.setSensorRequest("Reset");
