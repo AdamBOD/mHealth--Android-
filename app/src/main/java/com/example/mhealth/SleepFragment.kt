@@ -56,6 +56,11 @@ class SleepFragment : Fragment() {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun createChart () {
+        sumSleep  = 0
+        averageSleep = 0
+        maxSleep = 0
+        minSleep = 0
+        
         healthDataObjects = MainActivity.getHistoricalData()
         val values = ArrayList<Entry>()
         for (i in 0..healthDataObjects!!.size - 1) {

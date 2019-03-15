@@ -56,6 +56,11 @@ class StepsFragment : Fragment() {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun createChart () {
+        sumSteps = 0
+        averageSteps = 0
+        minSteps = 0
+        maxSteps = 0
+
         healthDataObjects = MainActivity.getHistoricalData()
         val values = ArrayList<Entry>()
         for (i in 0..healthDataObjects!!.size - 1) {

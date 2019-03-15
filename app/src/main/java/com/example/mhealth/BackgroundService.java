@@ -41,6 +41,7 @@ public class BackgroundService extends Service {
     private static Boolean appInForeground = false;
 
     private Boolean dataToBeCompiled = false;
+    private static Boolean exerciseReset = false;
 
     private static int heartrate = 0;
     private static int stepsTaken = 0;
@@ -161,6 +162,7 @@ public class BackgroundService extends Service {
             if (lastReset.getDate() != new Date().getDate()) {
                 watchService.setSensorRequest("Reset");
                 watchService.findPeers();
+                exerciseReset = true;
 
                 dataToBeCompiled = true;
             }
@@ -226,7 +228,14 @@ public class BackgroundService extends Service {
                     dataToBeCompiled = false;
                 }
 
+                logData(String.valueOf(currentHours));
+
                 if (watchService != null) {
+                    if (exerciseReset) {
+                        watchService.setSensorRequest("Reset");
+                        watchService.findPeers();
+                    }
+
                     if (currentMinutes < 10) {
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(0));
                         if (currentMinutes == 1) {
@@ -239,10 +248,14 @@ public class BackgroundService extends Service {
                     } else {
                         if (currentMinutes == 30 || currentMinutes == 58) {
                             checkExercise = true;
-                        } else if (currentMinutes == 59 && currentHours == 23) {
-                            compileDailyData();
                         }
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(1));
+                    }
+
+                    if (currentHours == 23) {
+                        if (currentMinutes == 59) {
+                            compileDailyData();
+                        }
                     }
 
                     if (intervalCheck.equals("5") || intervalCheck.equals("0")) {
@@ -288,6 +301,10 @@ public class BackgroundService extends Service {
     private void sendNotification (String title, String data) {
         /*Notification notificationBuilder = new NotificationCompat.Builder(this)
                 .setAutoCancel((true));*/
+    }
+
+    public static void setResetExercise (Boolean reset) {
+        exerciseReset = reset;
     }
 
     public void compileDailyData () {

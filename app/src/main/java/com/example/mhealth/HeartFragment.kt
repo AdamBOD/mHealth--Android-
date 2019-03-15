@@ -23,6 +23,7 @@ import com.github.mikephil.charting.listener.OnChartGestureListener
 import java.util.concurrent.ThreadLocalRandom
 import com.samsung.accessory.safiletransfer.a.i
 import android.view.MotionEvent
+import com.example.mhealth.BackgroundService.logData
 import com.github.mikephil.charting.listener.ChartTouchListener
 import io.realm.RealmResults
 
@@ -57,6 +58,7 @@ class HeartFragment : Fragment() {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         createChart()
     }
 
@@ -66,6 +68,11 @@ class HeartFragment : Fragment() {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun createChart () {
+        sumHeartrate = 0
+        averageHeartrate = 0
+        minHeartrate = 0
+        maxHeartrate = 0
+
         healthDataObjects = MainActivity.getHistoricalData()
         val values = ArrayList<Entry>()
         for (i in 0..healthDataObjects!!.size - 1) {
@@ -89,6 +96,7 @@ class HeartFragment : Fragment() {
             }
         }
 
+        logData ("HeartmList Size: " + healthDataObjects!!.size.toString())
         if (healthDataObjects!!.size > 0) {
             averageHeartrate = sumHeartrate / healthDataObjects!!.size
         }

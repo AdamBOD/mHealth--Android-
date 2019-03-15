@@ -56,6 +56,11 @@ class CaloriesFragment : Fragment() {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun createChart () {
+        sumCaloriesBurned = 0
+        averageCaloriesBurned = 0
+        minCaloriesBurned = 0
+        maxCaloriesBurned = 0
+
         healthDataObjects = MainActivity.getHistoricalData()
         val values = ArrayList<Entry>()
         for (i in 0..healthDataObjects!!.size - 1) {

@@ -36,6 +36,7 @@ import io.realm.RealmConfiguration;
 
 import static android.content.Context.MODE_PRIVATE;
 import static com.example.mhealth.BackgroundService.logData;
+import static com.example.mhealth.BackgroundService.setResetExercise;
 import static com.example.mhealth.BackgroundService.updateData;
 
 public class WatchService extends SAAgentV2 {
@@ -142,9 +143,15 @@ public class WatchService extends SAAgentV2 {
                 requestServiceConnection(peerAgent);
         } else if (result == SAAgentV2.FINDPEER_DEVICE_NOT_CONNECTED) {
             logData ("FINDPEER_DEVICE_NOT_CONNECTED");
+            if (getSensorRequest().equals("Reset")) {
+                setResetExercise(true);
+            }
             Log.e("Watch Error","Disconnected");
         } else if (result == SAAgentV2.FINDPEER_SERVICE_NOT_FOUND) {
             logData ("FINDPEER_SERVICE_NOT_FOUND");
+            if (getSensorRequest().equals("Reset")) {
+                setResetExercise(true);
+            }
             Log.e("Watch Error","Disconnected");
         } else {
             //Toast.makeText(getApplicationContext(), "Could not find the watch", Toast.LENGTH_LONG).show();
@@ -357,6 +364,11 @@ public class WatchService extends SAAgentV2 {
                                 realmDBHandler.setHealthData(previousData);
                             }
                         }
+                    } else if (message.equals("ExerciseReset")) {
+                        logData("Exercise Reset");
+                        setResetExercise(false);
+                        setSensorRequest("Exercise");
+                        findPeers();
                     } else {
                         if (getSensorRequest().equals("Heart")) {
                             if (!retryConnection) {
