@@ -29,7 +29,6 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.Calendar;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
@@ -346,7 +345,6 @@ public class WatchService extends SAAgentV2 {
                                             if (duration > 20) {
                                                 logData("Duration of Sleep: " + String.valueOf(duration));
                                                 SleepObject sleepObject = new SleepObject(duration, new Date());
-                                                updateData("Sleep", String.valueOf(sleepObject.getDuration()));
                                                 realmDBHandler.addToDB(sleepObject);
                                             }
 
@@ -525,6 +523,26 @@ public class WatchService extends SAAgentV2 {
                     .build();
             Realm.setDefaultConfiguration(realmConfiguration);
             Realm realm = Realm.getDefaultInstance();
+
+            Date endDate = new Date();
+            Date startDate = new Date();
+            startDate.setHours(0);
+            startDate.setMinutes(0);
+            startDate.setSeconds(0);
+            SleepObject sleepResults = null;
+            try {
+                sleepResults = realm.where(SleepObject.class).between("date", startDate, endDate).findFirst();
+            } catch (RuntimeException err) {
+                logData("Error getting previous sleep object from the day");
+            }
+
+            if (sleepResults != null) {
+                sleepData.setDuration(sleepData.getDuration() + sleepResults.getDuration());
+                sleepResults.deleteFromRealm();
+            }
+
+            updateData("Sleep", String.valueOf(sleepData.getDuration()));
+
             realm.executeTransaction(new Realm.Transaction() {
                 @Override
                 public void execute (Realm realm) {
