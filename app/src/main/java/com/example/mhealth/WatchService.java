@@ -529,15 +529,18 @@ public class WatchService extends SAAgentV2 {
             startDate.setHours(0);
             startDate.setMinutes(0);
             startDate.setSeconds(0);
-            SleepObject sleepResults = null;
+            final SleepObject sleepResult;
+            SleepObject sleepResults;
             try {
                 sleepResults = realm.where(SleepObject.class).between("date", startDate, endDate).findFirst();
             } catch (RuntimeException err) {
                 logData("Error getting previous sleep object from the day");
+                sleepResults = null;
             }
 
-            if (sleepResults != null) {
-                sleepData.setDuration(sleepData.getDuration() + sleepResults.getDuration());
+            sleepResult = sleepResults;
+            if (sleepResult != null) {
+                sleepData.setDuration(sleepData.getDuration() + sleepResult.getDuration());
             }
 
             updateData("Sleep", String.valueOf(sleepData.getDuration()));
@@ -546,10 +549,9 @@ public class WatchService extends SAAgentV2 {
                 @Override
                 public void execute (Realm realm) {
                     realm.copyToRealmOrUpdate(sleepData);
+                    sleepResult.deleteFromRealm();
                 }
             });
-
-            sleepResults.deleteFromRealm();
             realm.close();
         }
 

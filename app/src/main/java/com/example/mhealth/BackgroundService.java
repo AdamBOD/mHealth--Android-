@@ -112,7 +112,7 @@ public class BackgroundService extends Service {
                 .setContentIntent(pendingIntent)
                 .build();
 
-        //startForeground(1, serviceNotification);
+        startForeground(1, serviceNotification);
 
         float[] inputValues = new float[11];
         inputValues[0] = 65;
