@@ -538,7 +538,6 @@ public class WatchService extends SAAgentV2 {
 
             if (sleepResults != null) {
                 sleepData.setDuration(sleepData.getDuration() + sleepResults.getDuration());
-                sleepResults.deleteFromRealm();
             }
 
             updateData("Sleep", String.valueOf(sleepData.getDuration()));
@@ -549,6 +548,8 @@ public class WatchService extends SAAgentV2 {
                     realm.copyToRealmOrUpdate(sleepData);
                 }
             });
+
+            sleepResults.deleteFromRealm();
             realm.close();
         }
 

@@ -7,6 +7,7 @@
     tools:context=".HomeFragment">
 
     <LinearLayout
+        android:id="@+id/home_Container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
@@ -109,7 +110,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_horizontal"
-                    android:text="5000 Steps"
+                    android:text=""
                     android:layout_marginTop="5dp"
                     android:textSize="20sp"/>
             </LinearLayout>
@@ -148,7 +149,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_horizontal"
-                    android:text="5500 Calories"
+                    android:text=""
                     android:layout_marginTop="5dp"
                     android:textSize="20sp"/>
             </LinearLayout>
@@ -181,11 +182,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_horizontal"
-                    android:text="7 Hours 30 Minutes"
+                    android:text=""
                     android:layout_marginTop="5dp"
                     android:textSize="20sp"/>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
-
 </FrameLayout>

@@ -114,19 +114,18 @@ public class BackgroundService extends Service {
 
         //startForeground(1, serviceNotification);
 
-        float[] inputValues = new float[12];
+        float[] inputValues = new float[11];
         inputValues[0] = 65;
         inputValues[1] = 100;
         inputValues[2] = 85;
-        inputValues[3] = 16000;
-        inputValues[4] = 465;
+        inputValues[3] = 6000;
+        inputValues[4] = 265;
         inputValues[5] = 455;
         inputValues[6] = 1;
         inputValues[7] = 1;
-        inputValues[8] = inputValues[4] / 16000;
+        inputValues[8] = inputValues[4] / 6000;
         inputValues[9] = inputValues[5] / inputValues[2];
         inputValues[10] = inputValues[3] / inputValues[2];
-        inputValues[11] = inputValues[3] / inputValues[1];
 
         getMLOutput(inputValues);
 
@@ -405,7 +404,7 @@ public class BackgroundService extends Service {
             });
             realm.close();
 
-            float[] inputValues = new float[12];
+            float[] inputValues = new float[11];
             inputValues[0] = minHeartrate;
             inputValues[1] = maxHeartrate;
             inputValues[2] = averageHeartrate;
@@ -417,7 +416,6 @@ public class BackgroundService extends Service {
             inputValues[8] = inputValues[4] / exerciseObject.getSteps();
             inputValues[9] = inputValues[5] / inputValues[2];
             inputValues[10] = inputValues[3] / inputValues[2];
-            inputValues[11] = inputValues[3] / inputValues[1];
 
             getMLOutput(inputValues);
 

@@ -1,16 +1,31 @@
 package com.example.mhealth
 
+import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Animatable
+import android.graphics.drawable.AnimatedVectorDrawable
+import android.graphics.drawable.AnimationDrawable
+import android.graphics.drawable.Drawable
+import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.BottomNavigationView
+import android.support.graphics.drawable.Animatable2Compat
+import android.support.graphics.drawable.AnimatedVectorDrawableCompat
 import android.support.v4.app.Fragment
 import android.support.v7.app.AppCompatActivity
+import android.util.AttributeSet
 import android.view.View
+import android.widget.ImageView
+import androidx.annotation.RequiresApi
 import com.androidnetworking.AndroidNetworking
 import com.example.mhealth.BackgroundService.logData
 import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.RealmResults
+import kotlinx.android.synthetic.main.activity_main.*
+import android.R.attr.delay
+
+
 
 
 class MainActivity : AppCompatActivity() {
@@ -74,6 +89,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -83,6 +99,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContentView(R.layout.activity_main)
+
+        val animatedDrawable: Animatable = splash_Icon.drawable as Animatable
+        animatedDrawable.start()
+
+        AnimatedVectorDrawableCompat.registerAnimationCallback(splash_Icon.drawable,
+                object : Animatable2Compat.AnimationCallback() {
+                    override fun onAnimationEnd(drawable: Drawable?) {
+                        Thread.sleep(500)
+                        hideSplash()
+                    }
+                })
 
         openFragment(homeFragment)
 
@@ -110,9 +137,17 @@ class MainActivity : AppCompatActivity() {
         AndroidNetworking.initialize(getApplicationContext());
     }
 
+    override fun onCreateView(name: String?, context: Context?, attrs: AttributeSet?): View? {
+        return super.onCreateView(name, context, attrs)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         BackgroundService.updateAppState(false)
+    }
+
+    private fun hideSplash() {
+        splash_Container.visibility = View.GONE
     }
 
     private fun openFragment(fragment: Fragment) {
