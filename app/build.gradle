@@ -25,6 +25,9 @@ android {
         sourceCompatibility = '1.8'
         targetCompatibility = '1.8'
     }
+    aaptOptions {
+        noCompress 'tflite'
+    }
 }
 
 dependencies {
@@ -42,6 +45,7 @@ dependencies {
     implementation 'com.amitshekhar.android:android-networking:1.0.2'
     implementation files('libs/accessory-v2.6.1.jar')
     implementation files('libs/sdk-v1.0.0.jar')
+    implementation 'org.tensorflow:tensorflow-lite:+'
 }
 repositories {
     mavenCentral()

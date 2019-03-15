@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.AssetFileDescriptor;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Handler;
@@ -12,6 +13,8 @@ import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+
+import org.tensorflow.lite.Interpreter;
 
 import com.androidnetworking.AndroidNetworking;
 import com.androidnetworking.common.Priority;
@@ -23,6 +26,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +58,8 @@ public class BackgroundService extends Service {
 
     private String CHANNEL_ID = "mHealthChannel";
 
+    private Interpreter interpreter;
+
     private SAAgentV2.RequestAgentCallback watchAgentCallback = new SAAgentV2.RequestAgentCallback() {
         @Override
         public void onAgentAvailable(SAAgentV2 agent) {
@@ -72,6 +82,12 @@ public class BackgroundService extends Service {
     @Override
     public void onCreate () {
         SAAgentV2.requestAgent(getApplicationContext(), WatchService.class.getName(), watchAgentCallback);
+
+        try {
+            interpreter = new Interpreter(loadModelFile());
+        } catch (Exception err) {
+            logData("Error setting up TensorFlow (" + err.getMessage() + ")");
+        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
@@ -96,7 +112,23 @@ public class BackgroundService extends Service {
                 .setContentIntent(pendingIntent)
                 .build();
 
-        startForeground(1, serviceNotification);
+        //startForeground(1, serviceNotification);
+
+        float[] inputValues = new float[12];
+        inputValues[0] = 65;
+        inputValues[1] = 100;
+        inputValues[2] = 85;
+        inputValues[3] = 16000;
+        inputValues[4] = 465;
+        inputValues[5] = 455;
+        inputValues[6] = 1;
+        inputValues[7] = 1;
+        inputValues[8] = inputValues[4] / 16000;
+        inputValues[9] = inputValues[5] / inputValues[2];
+        inputValues[10] = inputValues[3] / inputValues[2];
+        inputValues[11] = inputValues[3] / inputValues[1];
+
+        getMLOutput(inputValues);
 
         return START_STICKY;
     }
@@ -372,9 +404,49 @@ public class BackgroundService extends Service {
                 }
             });
             realm.close();
+
+            float[] inputValues = new float[12];
+            inputValues[0] = minHeartrate;
+            inputValues[1] = maxHeartrate;
+            inputValues[2] = averageHeartrate;
+            inputValues[3] = exerciseObject.getSteps();
+            inputValues[4] = (int) exerciseObject.getCaloriesBurned();
+            inputValues[5] = sleepObject.getDuration();
+            inputValues[6] = (sleepObject.getDuration() >= 450) ? 1 : 0;
+            inputValues[7] = (exerciseObject.getSteps() >= 6000) ? 1 : 0;
+            inputValues[8] = inputValues[4] / exerciseObject.getSteps();
+            inputValues[9] = inputValues[5] / inputValues[2];
+            inputValues[10] = inputValues[3] / inputValues[2];
+            inputValues[11] = inputValues[3] / inputValues[1];
+
+            getMLOutput(inputValues);
+
         } catch (RuntimeException err) {
             logData("Error getting daily data (" + err.getMessage() + ")");
         }
+    }
+
+    private void getMLOutput (float[] inputArray) {
+        float[][] outputArray = new float[1][2];
+
+        interpreter.run (inputArray, outputArray);
+
+        logData(String.valueOf("Unhealthy: " + outputArray[0][0] + " Healthy: " + outputArray[0][1]));
+
+        if (outputArray[0][0] > outputArray[0][1]) {
+            logData("Unhealthy");
+        } else if (outputArray[0][0] < outputArray[0][1]) {
+            logData("Healthy");
+        }
+    }
+
+    private MappedByteBuffer loadModelFile () throws IOException {
+        AssetFileDescriptor fileDescriptor = getApplicationContext().getAssets().openFd("mHealth_Model.tflite");
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
     static void logData (String message) {
