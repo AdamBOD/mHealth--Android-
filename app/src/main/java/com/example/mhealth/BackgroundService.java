@@ -1,8 +1,10 @@
 package com.example.mhealth;
 
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetFileDescriptor;
@@ -104,7 +106,7 @@ public class BackgroundService extends Service {
 
         Notification serviceNotification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("mHealth")
-                .setContentText("Reduce stress")
+                .setContentText("Collecting Data")
                 .setSmallIcon(R.mipmap.ic_small)
                 .setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), R.mipmap.ic_launcher))
                 .setPriority(Notification.PRIORITY_MIN)
@@ -402,21 +404,40 @@ public class BackgroundService extends Service {
             inputValues[9] = inputValues[5] / inputValues[2];
             inputValues[10] = inputValues[3] / inputValues[2];
 
-            getMLOutput(inputValues);
+            float[] MLOutput = getMLOutput(inputValues);
+            String MLRating = "";
+
+            if (MLOutput[0] > MLOutput[1]) {
+                MLRating = "Unhealthy";
+            } else if (MLOutput[0] < MLOutput[1]) {
+                MLRating = "Healthy";
+            }
+
+            Notification serviceNotification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle("mHealth")
+                    .setContentText(MLRating)
+                    .setSmallIcon(R.mipmap.ic_small)
+                    .setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), R.mipmap.ic_launcher))
+                    .setPriority(Notification.PRIORITY_MIN)
+                    .setShowWhen(false)
+                    .build();
+
+            NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            mNotificationManager.notify(1, serviceNotification);
 
         } catch (RuntimeException err) {
             logData("Error getting daily data (" + err.getMessage() + ")");
         }
     }
 
-    public static float[][] getMLOutput (float[] inputArray) {
+    public static float[] getMLOutput (float[] inputArray) {
         float[][] outputArray = new float[1][2];
 
         interpreter.run (inputArray, outputArray);
 
         logData(String.valueOf("Unhealthy: " + outputArray[0][0] + " Healthy: " + outputArray[0][1]));
 
-        return outputArray;
+        return outputArray[0];
     }
 
     private MappedByteBuffer loadModelFile () throws IOException {

@@ -1,5 +1,6 @@
 package com.example.mhealth
 
+import android.annotation.TargetApi
 import android.content.Intent
 import android.graphics.drawable.Animatable
 import android.graphics.drawable.Drawable
@@ -23,6 +24,8 @@ import java.io.FileInputStream
 import java.io.IOException
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
+import android.app.ActivityManager
+import android.content.Context
 
 
 class MainActivity : AppCompatActivity() {
@@ -93,11 +96,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.M)
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         interpreter = Interpreter(loadModelFile())
-        if (!BackgroundService.serviceRunning) { //TODO CHANGE THIS CHECK - ALWAYS FALSE ATM
+        logData(checkServiceRunning("com.example.mhealth.BackgroundService").toString())
+        if (!checkServiceRunning("com.example.mhealth.BackgroundService")) {
             val intent = Intent(this, BackgroundService::class.java)
             startService(intent)
         }
@@ -148,6 +153,18 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         BackgroundService.updateAppState(false)
+    }
+
+    // checkServiceEunning code adapted from https://stackoverflow.com/questions/17588910/check-if-service-is-running-on-android?lq=1
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun checkServiceRunning(serviceClass: String): Boolean {
+        val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        for (service in manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass == service.service.className) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun hideSplash() {
