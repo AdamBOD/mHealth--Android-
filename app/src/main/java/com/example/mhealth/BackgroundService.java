@@ -202,8 +202,10 @@ public class BackgroundService extends Service {
             broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
             broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
 
-            watchService.setSensorRequest("Exercise");
-            watchService.findPeers();
+            if (watchService != null) {
+                watchService.setSensorRequest("Exercise");
+                watchService.findPeers();
+            }
         }
 
         appInForeground = appState;
@@ -231,6 +233,7 @@ public class BackgroundService extends Service {
             caloriesBurned = Integer.parseInt(data);
         } else if (type.equals("Sleep")) {
             sleep = Long.parseLong(data);
+            data = sleepToString(Long.parseLong(data));
         }
         broadcaster.sendContentUpdate(type, data);
     }

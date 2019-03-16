@@ -549,9 +549,17 @@ public class WatchService extends SAAgentV2 {
                 @Override
                 public void execute (Realm realm) {
                     realm.copyToRealmOrUpdate(sleepData);
-                    sleepResult.deleteFromRealm();
                 }
             });
+
+            if (sleepResults != null) {
+                realm.executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute (Realm realm) {
+                        sleepResult.deleteFromRealm();
+                    }
+                });
+            }
             realm.close();
         }
 
