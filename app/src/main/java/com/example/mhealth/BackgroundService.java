@@ -58,7 +58,7 @@ public class BackgroundService extends Service {
 
     private String CHANNEL_ID = "mHealthChannel";
 
-    private Interpreter interpreter;
+    private static Interpreter interpreter;
 
     private SAAgentV2.RequestAgentCallback watchAgentCallback = new SAAgentV2.RequestAgentCallback() {
         @Override
@@ -113,21 +113,6 @@ public class BackgroundService extends Service {
                 .build();
 
         startForeground(1, serviceNotification);
-
-        float[] inputValues = new float[11];
-        inputValues[0] = 65;
-        inputValues[1] = 100;
-        inputValues[2] = 85;
-        inputValues[3] = 6000;
-        inputValues[4] = 265;
-        inputValues[5] = 455;
-        inputValues[6] = 1;
-        inputValues[7] = 1;
-        inputValues[8] = inputValues[4] / 6000;
-        inputValues[9] = inputValues[5] / inputValues[2];
-        inputValues[10] = inputValues[3] / inputValues[2];
-
-        getMLOutput(inputValues);
 
         return START_STICKY;
     }
@@ -424,22 +409,18 @@ public class BackgroundService extends Service {
         }
     }
 
-    private void getMLOutput (float[] inputArray) {
+    public static float[][] getMLOutput (float[] inputArray) {
         float[][] outputArray = new float[1][2];
 
         interpreter.run (inputArray, outputArray);
 
         logData(String.valueOf("Unhealthy: " + outputArray[0][0] + " Healthy: " + outputArray[0][1]));
 
-        if (outputArray[0][0] > outputArray[0][1]) {
-            logData("Unhealthy");
-        } else if (outputArray[0][0] < outputArray[0][1]) {
-            logData("Healthy");
-        }
+        return outputArray;
     }
 
     private MappedByteBuffer loadModelFile () throws IOException {
-        AssetFileDescriptor fileDescriptor = getApplicationContext().getAssets().openFd("mHealth_Model.tflite");
+        AssetFileDescriptor fileDescriptor = getAssets().openFd("mHealth_Model.tflite");
         FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
         FileChannel fileChannel = inputStream.getChannel();
         long startOffset = fileDescriptor.getStartOffset();

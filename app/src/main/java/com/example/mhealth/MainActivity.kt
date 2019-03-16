@@ -1,10 +1,7 @@
 package com.example.mhealth
 
-import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Animatable
-import android.graphics.drawable.AnimatedVectorDrawable
-import android.graphics.drawable.AnimationDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
@@ -13,9 +10,7 @@ import android.support.graphics.drawable.Animatable2Compat
 import android.support.graphics.drawable.AnimatedVectorDrawableCompat
 import android.support.v4.app.Fragment
 import android.support.v7.app.AppCompatActivity
-import android.util.AttributeSet
 import android.view.View
-import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import com.androidnetworking.AndroidNetworking
 import com.example.mhealth.BackgroundService.logData
@@ -23,9 +18,11 @@ import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.RealmResults
 import kotlinx.android.synthetic.main.activity_main.*
-import android.R.attr.delay
-
-
+import org.tensorflow.lite.Interpreter
+import java.io.FileInputStream
+import java.io.IOException
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 
 
 class MainActivity : AppCompatActivity() {
@@ -35,6 +32,8 @@ class MainActivity : AppCompatActivity() {
     private val caloriesFragment = CaloriesFragment.newInstance()
     private val sleepFragment = SleepFragment.newInstance()
     private var backgroundService: BackgroundService? = null
+    private lateinit var interpreter: Interpreter
+    private lateinit var healthOutput: Array<String>
 
     private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
         when (item.itemId) {
@@ -65,6 +64,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         var healthDataResults: RealmResults<HealthDataObject>? = null
+        lateinit var healthRecommendations: Array<String>
 
         private fun fetchHistoricalData() {
             val realmConfiguration = RealmConfiguration.Builder()
@@ -87,12 +87,16 @@ class MainActivity : AppCompatActivity() {
         fun getHistoricalData() : RealmResults<HealthDataObject>? {
             return healthDataResults
         }
+
+        fun getReccomendation (): Array<String> {
+            return healthRecommendations
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        interpreter = Interpreter(loadModelFile())
         if (!BackgroundService.serviceRunning) { //TODO CHANGE THIS CHECK - ALWAYS FALSE ATM
             val intent = Intent(this, BackgroundService::class.java)
             startService(intent)
@@ -114,7 +118,7 @@ class MainActivity : AppCompatActivity() {
         openFragment(homeFragment)
 
         Realm.init(applicationContext)
-        /*val realmConfiguration = RealmConfiguration.Builder()
+        val realmConfiguration = RealmConfiguration.Builder()
                 .deleteRealmIfMigrationNeeded()
                 .name("mHealth.realm")
                 .schemaVersion(0)
@@ -125,20 +129,20 @@ class MainActivity : AppCompatActivity() {
         val r = realm.where(HealthDataObject::class.java)
                 .findAll()
 
-        logData("Health Data: " + r.toString())*/
+        logData("Health Data: " + r.toString())
 
         //healthDataObjects = fetchHistoricalData()
         fetchHistoricalData()
+        val realmData = getHistoricalData()
+        if (realmData != null) {
+            healthRecommendations = getMLRecommendation(realmData.get(realmData.size - 1)!!)
+        }
 
         val navigation = findViewById<View>(R.id.navigation) as BottomNavigationView
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
 
         logData ("Started App")
-        AndroidNetworking.initialize(getApplicationContext());
-    }
-
-    override fun onCreateView(name: String?, context: Context?, attrs: AttributeSet?): View? {
-        return super.onCreateView(name, context, attrs)
+        AndroidNetworking.initialize(applicationContext)
     }
 
     override fun onDestroy() {
@@ -154,5 +158,65 @@ class MainActivity : AppCompatActivity() {
         val transaction = supportFragmentManager.beginTransaction()
         transaction.replace(R.id.container, fragment)
         transaction.commit()
+    }
+
+    fun getMLRecommendation (healthData: HealthDataObject): Array<String> {
+        val inputValues = FloatArray(11)
+
+        inputValues[0] = healthData.minimumHeartrate.toFloat()
+        inputValues[1] = healthData.maximumHeartrate.toFloat()
+        inputValues[2] = healthData.averageHeartrate.toFloat()
+        inputValues[3] = healthData.stepsTaken.toFloat()
+        inputValues[4] = healthData.caloriesBurned.toInt().toFloat()
+        inputValues[5] = healthData.sleep.toFloat()
+        inputValues[6] = (if (healthData.sleep >= 450) 1 else 0).toFloat()
+        inputValues[7] = (if (healthData.stepsTaken >= 6000) 1 else 0).toFloat()
+        inputValues[8] = inputValues[4] / healthData.stepsTaken
+        inputValues[9] = inputValues[5] / inputValues[2]
+        inputValues[10] = inputValues[3] / inputValues[2]
+
+        val outputArray = getMLOutput (inputValues)
+        var outputRating = ""
+        var outputRecommendation = ""
+
+        if (outputArray[0] > outputArray[1]) {
+            outputRating = "Unhealthy"
+            if (healthData.stepsTaken < 6000 || healthData.caloriesBurned < 255) {
+                outputRecommendation = "Exercise more"
+                if (healthData.sleep < 450) {
+                    outputRecommendation = "Exercise and sleep more"
+                }
+            } else if (healthData.sleep < 450) {
+                outputRecommendation = "Sleep more"
+            } else if (healthData.stepsTaken >= 6000 && healthData.caloriesBurned >= 255 && healthData.sleep >= 450) {
+                outputRating = "Somewhat Unhealthy"
+                outputRecommendation = "Exercise and sleep more"
+            }
+        } else if (outputArray[0] < outputArray[1]) {
+            outputRating = "Healthy"
+            outputRecommendation = "Keep it up"
+        }
+
+        val outputValues = arrayOf<String>(outputRating, outputRecommendation)
+
+        return outputValues
+    }
+
+    fun getMLOutput(inputArray: FloatArray): FloatArray {
+        val outputArray = Array(1) { FloatArray(2) }
+
+        interpreter.run(inputArray, outputArray)
+
+        return outputArray[0]
+    }
+
+    @Throws(IOException::class)
+    private fun loadModelFile(): MappedByteBuffer {
+        val fileDescriptor = assets.openFd("mHealth_Model.tflite")
+        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+        val fileChannel = inputStream.getChannel()
+        val startOffset = fileDescriptor.startOffset
+        val declaredLength = fileDescriptor.declaredLength
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
     }
 }
