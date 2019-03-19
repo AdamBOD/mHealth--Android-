@@ -28,14 +28,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.RequiresApi;
 import io.realm.Realm;
@@ -322,11 +320,6 @@ public class BackgroundService extends Service {
         }
     }
 
-    private void sendNotification (String title, String data) {
-        /*Notification notificationBuilder = new NotificationCompat.Builder(this)
-                .setAutoCancel((true));*/
-    }
-
     public static void setResetExercise (Boolean reset) {
         exerciseReset = reset;
     }
@@ -431,7 +424,6 @@ public class BackgroundService extends Service {
                 } else if (exerciseObject.getSteps() >= 6000 && exerciseObject.getCaloriesBurned() >= 255
                         && sleepObject.getDuration() >= 450) {
                     if (averageHeartrate > 65) {
-                        MLRating = "Unhealthy";
                         MLRecommendation = "Reduce stress";
                     } else {
                         MLRating = "Somewhat Unhealthy";
