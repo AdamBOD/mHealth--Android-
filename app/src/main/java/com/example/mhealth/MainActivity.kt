@@ -129,14 +129,7 @@ class MainActivity : AppCompatActivity() {
                 .schemaVersion(0)
                 .build()
         Realm.setDefaultConfiguration(realmConfiguration)
-        val realm = Realm.getDefaultInstance()
 
-        val r = realm.where(HealthDataObject::class.java)
-                .findAll()
-
-        logData("Health Data: " + r.toString())
-
-        //healthDataObjects = fetchHistoricalData()
         fetchHistoricalData()
         val realmData = getHistoricalData()
         if (realmData != null) {

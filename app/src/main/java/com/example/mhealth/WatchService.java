@@ -221,7 +221,6 @@ public class WatchService extends SAAgentV2 {
                 return;
             }
             String message = new String(data);
-            //TODO - Break up this function into separate handlers
             if (!receivedData) {
                 if (!message.equals("undefined")) {
                     if (!message.equals("Error getting data from watch.")) {
