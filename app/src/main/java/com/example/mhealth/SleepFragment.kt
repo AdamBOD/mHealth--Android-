@@ -104,7 +104,12 @@ class SleepFragment : Fragment() {
         sleep_Chart.setDrawBorders(false)
         sleep_Chart.setDrawMarkers(false)
         sleep_Chart.disableScroll()
-        sleep_Chart.axisLeft.axisMinimum = 0f //TODO - Average minus certain amount
+        sleep_Chart.axisLeft.axisMinimum = 0f
+
+        if (maxSleep <= 480) {
+            sleep_Chart.axisLeft.axisMaximum = 500f
+        }
+
         sleep_Chart.xAxis.isEnabled = false
         sleep_Chart.axisLeft.isEnabled = true
         sleep_Chart.axisRight.isEnabled = false

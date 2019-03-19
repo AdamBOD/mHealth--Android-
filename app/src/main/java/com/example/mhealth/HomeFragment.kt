@@ -30,6 +30,8 @@ class HomeFragment : Fragment() {
     private var stepsTaken: String = ""
     private var caloriesBurned: String = ""
     private var sleep: String = ""
+    private var healthRating: String = ""
+    private var healthRecommendation: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,36 +69,52 @@ class HomeFragment : Fragment() {
         override fun onReceive (context: Context?, intent: Intent) {
             if (intent.getStringExtra("contentType").equals("Heart")) {
                 val newBPM = intent.getStringExtra("data") + " BPM"
+                heartRate = newBPM
                 if (tile_Heartrate == null) {
-                    heartRate = newBPM
                     dataToBeLoaded = true
                     return
                 }
                 tile_Heartrate.text = newBPM
             } else if (intent.getStringExtra("contentType").equals("Steps")) {
                 val newSteps = intent.getStringExtra("data") + " Steps"
+                stepsTaken = newSteps
                 if (tile_StepsTaken == null) {
-                    stepsTaken = newSteps
                     dataToBeLoaded = true
                     return
                 }
                 tile_StepsTaken.text = newSteps
             } else if (intent.getStringExtra("contentType").equals("Calories")) {
                 val calories = intent.getStringExtra("data") + " kCal"
+                caloriesBurned = calories
                 if (tile_Heartrate == null) {
-                    caloriesBurned = calories
                     dataToBeLoaded = true
                     return
                 }
                 tile_CaloriesBurned.text = calories
             } else if (intent.getStringExtra("contentType").equals("Sleep")) {
                 val timeSlept = intent.getStringExtra("data")
+                sleep = timeSlept
                 if (tile_Sleep == null) {
-                    sleep = timeSlept
                     dataToBeLoaded = true
                     return
                 }
                 tile_Sleep.text = timeSlept
+            } else if (intent.getStringExtra("contentType").equals("Rating")) {
+                val rating = intent.getStringExtra("data")
+                healthRating = rating
+                if (health_Rating == null) {
+                    dataToBeLoaded = true
+                    return
+                }
+                health_Recommendation.text = rating
+            } else if (intent.getStringExtra("contentType").equals("Recommendation")) {
+                val recommendation = intent.getStringExtra("data")
+                healthRecommendation = recommendation
+                if (health_Recommendation == null) {
+                    dataToBeLoaded = true
+                    return
+                }
+                health_Recommendation.text = recommendation
             }
         }
     }

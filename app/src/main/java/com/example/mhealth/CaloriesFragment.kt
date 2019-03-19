@@ -103,7 +103,12 @@ class CaloriesFragment : Fragment() {
         calories_Chart.setDrawBorders(false)
         calories_Chart.setDrawMarkers(false)
         calories_Chart.disableScroll()
-        calories_Chart.axisLeft.axisMinimum = 0f //TODO - Average minus certain amount
+        calories_Chart.axisLeft.axisMinimum = 0f
+
+        if (maxCaloriesBurned <= 270) {
+            calories_Chart.axisLeft.axisMaximum = 300f
+        }
+
         calories_Chart.xAxis.isEnabled = false
         calories_Chart.axisLeft.isEnabled = true
         calories_Chart.axisRight.isEnabled = false

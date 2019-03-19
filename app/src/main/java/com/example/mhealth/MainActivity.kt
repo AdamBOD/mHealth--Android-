@@ -203,11 +203,24 @@ class MainActivity : AppCompatActivity() {
                 if (healthData.sleep < 450) {
                     outputRecommendation = "Exercise and sleep more"
                 }
+
+                if (healthData.averageHeartrate > 65) {
+                    outputRecommendation = "Exercise more and reduce stress"
+                }
             } else if (healthData.sleep < 450) {
                 outputRecommendation = "Sleep more"
+
+                if (healthData.averageHeartrate > 65) {
+                    outputRecommendation = "Sleep more and reduce stress"
+                }
             } else if (healthData.stepsTaken >= 6000 && healthData.caloriesBurned >= 255 && healthData.sleep >= 450) {
-                outputRating = "Somewhat Unhealthy"
-                outputRecommendation = "Exercise and sleep more"
+                if (healthData.averageHeartrate > 65) {
+                    outputRating = "Unhealthy"
+                    outputRecommendation = "Reduce stress"
+                } else {
+                    outputRating = "Somewhat Unhealthy"
+                    outputRecommendation = "Exercise and sleep more"
+                }
             }
         } else if (outputArray[0] < outputArray[1]) {
             outputRating = "Healthy"

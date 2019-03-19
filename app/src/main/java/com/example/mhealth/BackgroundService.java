@@ -409,11 +409,39 @@ public class BackgroundService extends Service {
 
             float[] MLOutput = getMLOutput(inputValues);
             String MLRating = "";
+            String MLRecommendation = "";
 
             if (MLOutput[0] > MLOutput[1]) {
                 MLRating = "Unhealthy";
+                if (exerciseObject.getSteps() < 6000 || exerciseObject.getCaloriesBurned() < 255) {
+                    MLRecommendation = "Exercise more";
+                    if (sleepObject.getDuration() < 450) {
+                        MLRecommendation = "Exercise and sleep more";
+                    }
+
+                    if (averageHeartrate > 65) {
+                        MLRecommendation = "Exercise more and reduce stress";
+                    }
+                } else if (sleepObject.getDuration() < 450) {
+                    MLRecommendation = "Sleep more";
+
+                    if (averageHeartrate > 65) {
+                        MLRecommendation = "Sleep more and reduce stress";
+                    }
+                } else if (exerciseObject.getSteps() >= 6000 && exerciseObject.getCaloriesBurned() >= 255
+                        && sleepObject.getDuration() >= 450) {
+                    if (averageHeartrate > 65) {
+                        MLRating = "Unhealthy";
+                        MLRecommendation = "Reduce stress";
+                    } else {
+                        MLRating = "Somewhat Unhealthy";
+                        MLRecommendation = "Exercise and sleep more";
+                    }
+                }
+
             } else if (MLOutput[0] < MLOutput[1]) {
                 MLRating = "Healthy";
+                MLRecommendation = "Keep it up";
             }
 
             Notification serviceNotification = new NotificationCompat.Builder(this, CHANNEL_ID)
@@ -427,6 +455,9 @@ public class BackgroundService extends Service {
 
             NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             mNotificationManager.notify(1, serviceNotification);
+
+            broadcaster.sendContentUpdate("Rating", MLRating);
+            broadcaster.sendContentUpdate("Recommendation", MLRecommendation);
 
         } catch (RuntimeException err) {
             logData("Error getting daily data (" + err.getMessage() + ")");

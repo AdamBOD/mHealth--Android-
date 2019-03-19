@@ -112,7 +112,7 @@ class HeartFragment : Fragment() {
         heart_Chart.setDrawBorders(false)
         heart_Chart.setDrawMarkers(false)
         heart_Chart.disableScroll()
-        heart_Chart.axisLeft.axisMinimum = 20f //TODO - Average minus certain amount
+        heart_Chart.axisLeft.axisMinimum = 20f
         heart_Chart.xAxis.isEnabled = false
         heart_Chart.axisLeft.isEnabled = true
         heart_Chart.axisRight.isEnabled = false
