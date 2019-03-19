@@ -13,6 +13,7 @@
     <string name="tile_calories">Calories Burned</string>
     <string name="tile_sleep">Sleep</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="average">Average: </string>
+    <string name="minimum">Minimum: </string>
+    <string name="maximum">Maximum: </string>
 </resources>

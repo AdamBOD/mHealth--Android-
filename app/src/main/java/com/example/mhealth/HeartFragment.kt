@@ -3,28 +3,24 @@ package com.example.mhealth
 import android.content.Context
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
+import com.github.mikephil.charting.components.LimitLine
+import com.github.mikephil.charting.components.LimitLine.LimitLabelPosition
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.components.LimitLine.LimitLabelPosition
-import com.github.mikephil.charting.components.LimitLine
-import kotlinx.android.synthetic.main.fragment_heart.*
-import android.support.v4.content.ContextCompat
-import android.graphics.drawable.Drawable
-import android.os.Build
-import androidx.annotation.RequiresApi
-import com.github.mikephil.charting.components.Description
-import com.github.mikephil.charting.listener.OnChartGestureListener
-import java.util.concurrent.ThreadLocalRandom
-import com.samsung.accessory.safiletransfer.a.i
-import android.view.MotionEvent
 import com.github.mikephil.charting.listener.ChartTouchListener
+import com.github.mikephil.charting.listener.OnChartGestureListener
 import io.realm.RealmResults
+import kotlinx.android.synthetic.main.fragment_heart.*
 
 
 /**
@@ -38,6 +34,11 @@ import io.realm.RealmResults
  */
 class HeartFragment : Fragment() {
     private var healthDataObjects: RealmResults<HealthDataObject>? = null
+    private var sumHeartrate: Int = 0
+    private var averageHeartrate: Int = 0
+    private var maxHeartrate: Int = 0
+    private var minHeartrate: Int = 0
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
@@ -52,6 +53,7 @@ class HeartFragment : Fragment() {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         createChart()
     }
 
@@ -61,13 +63,38 @@ class HeartFragment : Fragment() {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun createChart () {
+        sumHeartrate = 0
+        averageHeartrate = 0
+        minHeartrate = 0
+        maxHeartrate = 0
+
         healthDataObjects = MainActivity.getHistoricalData()
         val values = ArrayList<Entry>()
         for (i in 0..healthDataObjects!!.size - 1) {
             val entry = Entry(i.toFloat(), healthDataObjects!![i]!!.averageHeartrate.toFloat(), healthDataObjects!![i]!!.date.toString())
             values.add(entry)
+
+            var dailyHeartrate: Int = healthDataObjects!![i]!!.averageHeartrate.toInt()
+            sumHeartrate += dailyHeartrate
+
+            if (minHeartrate == 0 && maxHeartrate == 0) {
+                minHeartrate = dailyHeartrate
+                maxHeartrate = dailyHeartrate
+            }
+
+            if (dailyHeartrate > maxHeartrate) {
+                maxHeartrate = dailyHeartrate
+            }
+
+            if (dailyHeartrate < minHeartrate) {
+                minHeartrate = dailyHeartrate
+            }
         }
-        values.add (Entry(4f, 65f, "02/03"))
+
+        if (healthDataObjects!!.size > 0) {
+            averageHeartrate = sumHeartrate / healthDataObjects!!.size
+        }
+
         val lineData = LineDataSet (values, "Heart Rate")
         lineData.fillColor = Color.parseColor("#1976D2")
         lineData.color = Color.parseColor("#1976D2")
@@ -85,7 +112,7 @@ class HeartFragment : Fragment() {
         heart_Chart.setDrawBorders(false)
         heart_Chart.setDrawMarkers(false)
         heart_Chart.disableScroll()
-        heart_Chart.axisLeft.axisMinimum = 20f //TODO - Average minus certain amount
+        heart_Chart.axisLeft.axisMinimum = 20f
         heart_Chart.xAxis.isEnabled = false
         heart_Chart.axisLeft.isEnabled = true
         heart_Chart.axisRight.isEnabled = false
@@ -139,7 +166,7 @@ class HeartFragment : Fragment() {
             }
         }
 
-        val averageLimit = LimitLine(60f, "Target")
+        val averageLimit = LimitLine(65f, "Target")
         averageLimit.lineWidth = 4f
         averageLimit.lineColor = Color.parseColor("#9E9E9E")
         averageLimit.enableDashedLine(30f, 10f, 0f)
@@ -148,10 +175,13 @@ class HeartFragment : Fragment() {
 
         heart_Chart.axisLeft.limitLines.add(0, averageLimit)
         heart_Chart.axisLeft.setDrawLimitLinesBehindData(true)
+
+        average_Heart.text = "$averageHeartrate BPM"
+        min_Heart.text = "$minHeartrate BPM"
+        max_Heart.text = "$maxHeartrate BPM"
     }
 
     interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         fun onFragmentInteraction(uri: Uri)
     }
 

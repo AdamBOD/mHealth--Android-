@@ -7,8 +7,6 @@ package com.example.mhealth;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Binder;
-import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 
@@ -31,14 +29,13 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.Calendar;
 
-import androidx.annotation.RequiresApi;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
 import static android.content.Context.MODE_PRIVATE;
 import static com.example.mhealth.BackgroundService.logData;
+import static com.example.mhealth.BackgroundService.setResetExercise;
 import static com.example.mhealth.BackgroundService.updateData;
 
 public class WatchService extends SAAgentV2 {
@@ -55,7 +52,9 @@ public class WatchService extends SAAgentV2 {
     private String sensorRequest;
 
     private int lastStepCount;
+    private int lastRefreshedStepCount;
     private double lastCalories;
+    private double lastRefreshedCalories;
     private String exerciseObjectID;
 
     private String lastSleepStatus;
@@ -105,6 +104,8 @@ public class WatchService extends SAAgentV2 {
                     previousDataObject.getExerciseObjectUID(),
                     previousDataObject.getSleepStatus(),
                     previousDataObject.getSleepTimestamp(),
+                    previousDataObject.getRefreshedStepsTaken(),
+                    previousDataObject.getRefreshedCaloriesBurned(),
                     new Date());
 
             lastStepCount = previousData.getStepsTaken();
@@ -112,15 +113,16 @@ public class WatchService extends SAAgentV2 {
             exerciseObjectID = previousData.getExerciseObjectUID();
             lastSleepStatus = previousData.getSleepStatus();
             lastSleepTimestamp = previousData.getSleepTimestamp();
-
-            logData (String.valueOf(previousData.getSleepStatus()));
+            lastRefreshedStepCount = previousDataObject.getRefreshedStepsTaken();
+            lastRefreshedCalories = previousDataObject.getRefreshedCaloriesBurned();
         } else {
             lastStepCount = 0;
             lastCalories = 0;
             exerciseObjectID = null;
             lastSleepStatus = null;
             lastSleepTimestamp = 0;
-
+            lastRefreshedStepCount = 0;
+            lastRefreshedCalories = 0;
             previousData = new TempHealthDataObject();
         }
     }
@@ -140,9 +142,15 @@ public class WatchService extends SAAgentV2 {
                 requestServiceConnection(peerAgent);
         } else if (result == SAAgentV2.FINDPEER_DEVICE_NOT_CONNECTED) {
             logData ("FINDPEER_DEVICE_NOT_CONNECTED");
+            if (getSensorRequest().equals("Reset")) {
+                setResetExercise(true);
+            }
             Log.e("Watch Error","Disconnected");
         } else if (result == SAAgentV2.FINDPEER_SERVICE_NOT_FOUND) {
             logData ("FINDPEER_SERVICE_NOT_FOUND");
+            if (getSensorRequest().equals("Reset")) {
+                setResetExercise(true);
+            }
             Log.e("Watch Error","Disconnected");
         } else {
             //Toast.makeText(getApplicationContext(), "Could not find the watch", Toast.LENGTH_LONG).show();
@@ -217,6 +225,13 @@ public class WatchService extends SAAgentV2 {
             if (!receivedData) {
                 if (!message.equals("undefined")) {
                     if (!message.equals("Error getting data from watch.")) {
+                        if (message.equals("ExerciseReset")) {
+                            logData("Exercise Reset");
+                            setResetExercise(false);
+                            setSensorRequest("Exercise");
+                            findPeers();
+                            return;
+                        }
                         receivedData = true;
                         retryConnection = false;
                         JsonObject receivedObject = new JsonParser().parse(message).getAsJsonObject();
@@ -258,11 +273,27 @@ public class WatchService extends SAAgentV2 {
                             if (exerciseData.getStepCount() < lastStepCount) {
                                 SharedPreferences preferencesEditor = getApplicationContext().getSharedPreferences("mHealth", MODE_PRIVATE);
                                 String lastResetString = preferencesEditor.getString("exerciseReset", new Date().toString());
-                                if (new Date().getDay() == new Date(lastResetString).getDay()) {
+                                if (new Date().getDate() != new Date(lastResetString).getDate()) {
                                     addObject = true;
+                                    lastStepCount = (int) exerciseData.getStepCount();
+                                    lastCalories = exerciseData.getCalories();
+
+                                    lastRefreshedStepCount = 0;
+                                    lastRefreshedCalories = 0;
                                 } else {
-                                    lastStepCount += exerciseData.getStepCount();
-                                    lastCalories += exerciseData.getCalories();
+                                    if (lastRefreshedStepCount == 0 || lastRefreshedCalories == 0) {
+                                        lastStepCount += exerciseData.getStepCount();
+                                        lastCalories += exerciseData.getCalories();
+
+                                        lastRefreshedStepCount = (int) exerciseData.getStepCount();
+                                        lastRefreshedCalories = exerciseData.getCalories();
+                                    } else {
+                                        lastStepCount += (exerciseData.getStepCount() - lastRefreshedStepCount);
+                                        lastCalories += (exerciseData.getCalories() - lastRefreshedCalories);
+
+                                        lastRefreshedStepCount = (int) exerciseData.getStepCount();
+                                        lastRefreshedCalories = exerciseData.getCalories();
+                                    }
                                 }
 
                                 exerciseObject = new ExerciseObject(
@@ -309,12 +340,11 @@ public class WatchService extends SAAgentV2 {
                             if (lastSleepStatus != null) {
                                 if (!lastSleepStatus.equals(currentStatus)) {
                                     if (lastSleepStatus.equals("ASLEEP")) {
-                                        if (Calendar.getInstance().getTimeInMillis() - sleepData.getTimestamp() >= 60000) {
+                                        if (new Date().getTime() - sleepData.getTimestamp() >= 360000) {
                                             long duration = ((sleepData.getTimestamp() - lastSleepTimestamp) / 1000) / 60;
                                             if (duration > 20) {
                                                 logData("Duration of Sleep: " + String.valueOf(duration));
                                                 SleepObject sleepObject = new SleepObject(duration, new Date());
-                                                updateData("Sleep", String.valueOf(sleepObject.getDuration()));
                                                 realmDBHandler.addToDB(sleepObject);
                                             }
 
@@ -369,12 +399,6 @@ public class WatchService extends SAAgentV2 {
         }
     }
 
-    public class LocalBinder extends Binder {
-        public WatchService getService() {
-            return WatchService.this;
-        }
-    }
-
     public void findPeers() {
         findPeerAgents();
     }
@@ -390,12 +414,11 @@ public class WatchService extends SAAgentV2 {
                         @Override
                         public void run() {
                             if (!receivedData && retryConnection) {
-                                logData("Cancelling heart rate and retrying");
                                 setSensorRequest("Retry");
                                 sendData(getSensorRequest());
                                 retryConnection = false;
                             } else if (!receivedData && !retryConnection) {
-                                logData("Cancelling heart rate");
+                                logData("Cancelling heart rate check");
                                 setSensorRequest("StopHeart");
                             }
                         }
@@ -500,12 +523,43 @@ public class WatchService extends SAAgentV2 {
                     .build();
             Realm.setDefaultConfiguration(realmConfiguration);
             Realm realm = Realm.getDefaultInstance();
+
+            Date endDate = new Date();
+            Date startDate = new Date();
+            startDate.setHours(0);
+            startDate.setMinutes(0);
+            startDate.setSeconds(0);
+            final SleepObject sleepResult;
+            SleepObject sleepResults;
+            try {
+                sleepResults = realm.where(SleepObject.class).between("date", startDate, endDate).findFirst();
+            } catch (RuntimeException err) {
+                logData("Error getting previous sleep object from the day");
+                sleepResults = null;
+            }
+
+            sleepResult = sleepResults;
+            if (sleepResult != null) {
+                sleepData.setDuration(sleepData.getDuration() + sleepResult.getDuration());
+            }
+
+            updateData("Sleep", String.valueOf(sleepData.getDuration()));
+
             realm.executeTransaction(new Realm.Transaction() {
                 @Override
                 public void execute (Realm realm) {
                     realm.copyToRealmOrUpdate(sleepData);
                 }
             });
+
+            if (sleepResults != null) {
+                realm.executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute (Realm realm) {
+                        sleepResult.deleteFromRealm();
+                    }
+                });
+            }
             realm.close();
         }
 

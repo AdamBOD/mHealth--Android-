@@ -1,6 +1,5 @@
 package com.example.mhealth
 
-import android.content.Context
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
@@ -20,7 +19,6 @@ import com.github.mikephil.charting.listener.ChartTouchListener
 import com.github.mikephil.charting.listener.OnChartGestureListener
 import io.realm.RealmResults
 import kotlinx.android.synthetic.main.fragment_steps.*
-import java.util.concurrent.ThreadLocalRandom
 
 /**
  * A simple [Fragment] subclass.
@@ -33,6 +31,10 @@ import java.util.concurrent.ThreadLocalRandom
  */
 class StepsFragment : Fragment() {
     private var healthDataObjects: RealmResults<HealthDataObject>? = null
+    private var sumSteps: Int = 0
+    private var averageSteps: Int = 0
+    private var maxSteps: Int = 0
+    private var minSteps: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,13 +54,38 @@ class StepsFragment : Fragment() {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun createChart () {
+        sumSteps = 0
+        averageSteps = 0
+        minSteps = 0
+        maxSteps = 0
+
         healthDataObjects = MainActivity.getHistoricalData()
         val values = ArrayList<Entry>()
         for (i in 0..healthDataObjects!!.size - 1) {
             val entry = Entry(i.toFloat(), healthDataObjects!![i]!!.stepsTaken.toFloat(), healthDataObjects!![i]!!.date.toString())
             values.add(entry)
+
+            var dailySteps: Int = healthDataObjects!![i]!!.stepsTaken.toInt()
+            sumSteps += dailySteps
+
+            if (minSteps == 0 && maxSteps == 0) {
+                minSteps = dailySteps
+                maxSteps = dailySteps
+            }
+
+            if (dailySteps > maxSteps) {
+                maxSteps = dailySteps
+            }
+
+            if (dailySteps < minSteps) {
+                minSteps = dailySteps
+            }
         }
-        values.add (Entry(4f, 6500f, "02/03"))
+
+        if (healthDataObjects!!.size > 0) {
+            averageSteps = sumSteps / healthDataObjects!!.size
+        }
+
         val lineData = LineDataSet (values, "Steps Taken")
         lineData.fillColor = Color.parseColor("#1976D2")
         lineData.color = Color.parseColor("#1976D2")
@@ -76,7 +103,12 @@ class StepsFragment : Fragment() {
         steps_Chart.setDrawBorders(false)
         steps_Chart.setDrawMarkers(false)
         steps_Chart.disableScroll()
-        steps_Chart.axisLeft.axisMinimum = 20f //TODO - Average minus certain amount
+        steps_Chart.axisLeft.axisMinimum = 0f
+
+        if (maxSteps <= 6200) {
+            steps_Chart.axisLeft.axisMaximum = 6500f
+        }
+
         steps_Chart.xAxis.isEnabled = false
         steps_Chart.axisLeft.isEnabled = true
         steps_Chart.axisRight.isEnabled = false
@@ -139,6 +171,10 @@ class StepsFragment : Fragment() {
 
         steps_Chart.axisLeft.limitLines.add(0, averageLimit)
         steps_Chart.axisLeft.setDrawLimitLinesBehindData(true)
+
+        average_Steps.text = "$averageSteps Steps"
+        min_Steps.text = "$minSteps Steps"
+        max_Steps.text = "$maxSteps Steps"
     }
 
     /**
@@ -153,7 +189,6 @@ class StepsFragment : Fragment() {
      * for more information.
      */
     interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         fun onFragmentInteraction(uri: Uri)
     }
 

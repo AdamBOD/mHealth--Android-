@@ -14,17 +14,23 @@ public class TempHealthDataObject extends RealmObject {
     private String exerciseObjectUID;
     private String sleepStatus;
     private long sleepTimestamp;
+    private int refreshedStepsTaken;
+    private double refreshedCaloriesBurned;
     private Date date;
 
     public TempHealthDataObject () {}
 
-    public TempHealthDataObject (int stepsTaken, double caloriesBurned, String exerciseObjectUID, String sleepStatus, long sleepTimestamp, Date date) {
+    public TempHealthDataObject (int stepsTaken, double caloriesBurned, String exerciseObjectUID,
+                                 String sleepStatus, long sleepTimestamp, int refreshedStepsTaken,
+                                 double refreshedCaloriesBurned, Date date) {
         this.UID = 0;
         this.stepsTaken = stepsTaken;
         this.caloriesBurned = caloriesBurned;
         this.exerciseObjectUID = exerciseObjectUID;
         this.sleepStatus = sleepStatus;
         this.sleepTimestamp = sleepTimestamp;
+        this.refreshedStepsTaken = refreshedStepsTaken;
+        this.refreshedCaloriesBurned = refreshedCaloriesBurned;
         this.date = date;
     }
 
@@ -66,5 +72,21 @@ public class TempHealthDataObject extends RealmObject {
 
     public void setSleepTimestamp(long sleepTimestamp) {
         this.sleepTimestamp = sleepTimestamp;
+    }
+
+    public int getRefreshedStepsTaken() {
+        return refreshedStepsTaken;
+    }
+
+    public void setRefreshedStepsTaken(int refreshedStepsTaken) {
+        this.refreshedStepsTaken = refreshedStepsTaken;
+    }
+
+    public double getRefreshedCaloriesBurned() {
+        return refreshedCaloriesBurned;
+    }
+
+    public void setRefreshedCaloriesBurned(double refreshedCaloriesBurned) {
+        this.refreshedCaloriesBurned = refreshedCaloriesBurned;
     }
 }

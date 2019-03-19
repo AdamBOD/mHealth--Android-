@@ -1,6 +1,5 @@
 package com.example.mhealth
 
-import android.content.Context
 import android.graphics.Color
 import android.net.Uri
 import android.os.Build
@@ -20,7 +19,6 @@ import com.github.mikephil.charting.listener.ChartTouchListener
 import com.github.mikephil.charting.listener.OnChartGestureListener
 import io.realm.RealmResults
 import kotlinx.android.synthetic.main.fragment_calories.*
-import java.util.concurrent.ThreadLocalRandom
 
 /**
  * A simple [Fragment] subclass.
@@ -33,6 +31,10 @@ import java.util.concurrent.ThreadLocalRandom
  */
 class CaloriesFragment : Fragment() {
     private var healthDataObjects: RealmResults<HealthDataObject>? = null
+    private var sumCaloriesBurned: Int = 0
+    private var averageCaloriesBurned: Int = 0
+    private var maxCaloriesBurned: Int = 0
+    private var minCaloriesBurned: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,13 +54,38 @@ class CaloriesFragment : Fragment() {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun createChart () {
+        sumCaloriesBurned = 0
+        averageCaloriesBurned = 0
+        minCaloriesBurned = 0
+        maxCaloriesBurned = 0
+
         healthDataObjects = MainActivity.getHistoricalData()
         val values = ArrayList<Entry>()
         for (i in 0..healthDataObjects!!.size - 1) {
             val entry = Entry(i.toFloat(), healthDataObjects!![i]!!.caloriesBurned.toFloat(), healthDataObjects!![i]!!.date.toString())
             values.add(entry)
+
+            var dailyCaloriesBurned: Int = healthDataObjects!![i]!!.caloriesBurned.toInt()
+            sumCaloriesBurned += dailyCaloriesBurned
+
+            if (minCaloriesBurned == 0 && maxCaloriesBurned == 0) {
+                minCaloriesBurned = dailyCaloriesBurned
+                maxCaloriesBurned = dailyCaloriesBurned
+            }
+
+            if (dailyCaloriesBurned > maxCaloriesBurned) {
+                maxCaloriesBurned = dailyCaloriesBurned
+            }
+
+            if (dailyCaloriesBurned < minCaloriesBurned) {
+                minCaloriesBurned = dailyCaloriesBurned
+            }
         }
-        values.add (Entry(4f, 250f, "02/03"))
+
+        if (healthDataObjects!!.size > 0) {
+            averageCaloriesBurned = sumCaloriesBurned / healthDataObjects!!.size
+        }
+
         val lineData = LineDataSet (values, "Calories Burned")
         lineData.fillColor = Color.parseColor("#1976D2")
         lineData.color = Color.parseColor("#1976D2")
@@ -76,7 +103,12 @@ class CaloriesFragment : Fragment() {
         calories_Chart.setDrawBorders(false)
         calories_Chart.setDrawMarkers(false)
         calories_Chart.disableScroll()
-        calories_Chart.axisLeft.axisMinimum = 0f //TODO - Average minus certain amount
+        calories_Chart.axisLeft.axisMinimum = 0f
+
+        if (maxCaloriesBurned <= 270) {
+            calories_Chart.axisLeft.axisMaximum = 300f
+        }
+
         calories_Chart.xAxis.isEnabled = false
         calories_Chart.axisLeft.isEnabled = true
         calories_Chart.axisRight.isEnabled = false
@@ -139,6 +171,10 @@ class CaloriesFragment : Fragment() {
 
         calories_Chart.axisLeft.limitLines.add(0, averageLimit)
         calories_Chart.axisLeft.setDrawLimitLinesBehindData(true)
+
+        average_Calories.text = "$averageCaloriesBurned kCal"
+        min_Calories.text = "$minCaloriesBurned kCal"
+        max_Calories.text = "$maxCaloriesBurned kCal"
     }
 
     /**
@@ -153,7 +189,6 @@ class CaloriesFragment : Fragment() {
      * for more information.
      */
     interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         fun onFragmentInteraction(uri: Uri)
     }
 

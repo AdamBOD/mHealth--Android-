@@ -1,14 +1,22 @@
 package com.example.mhealth;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Binder;
+import android.content.res.AssetFileDescriptor;
+import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Toast;
+
+import org.tensorflow.lite.Interpreter;
 
 import com.androidnetworking.AndroidNetworking;
 import com.androidnetworking.common.Priority;
@@ -20,16 +28,19 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import androidx.annotation.RequiresApi;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
-import io.realm.exceptions.RealmError;
-import io.realm.exceptions.RealmException;
 
 public class BackgroundService extends Service {
     public static boolean serviceRunning = false;
@@ -40,20 +51,25 @@ public class BackgroundService extends Service {
     private static Boolean appInForeground = false;
 
     private Boolean dataToBeCompiled = false;
+    private static Boolean exerciseReset = false;
 
     private static int heartrate = 0;
     private static int stepsTaken = 0;
     private static int caloriesBurned = 0;
     private static long sleep = 0;
 
+    private String CHANNEL_ID = "mHealthChannel";
+
+    private static Interpreter interpreter;
+
     private SAAgentV2.RequestAgentCallback watchAgentCallback = new SAAgentV2.RequestAgentCallback() {
         @Override
         public void onAgentAvailable(SAAgentV2 agent) {
-            Log.d("Agent Initialized", "Agent has been successfully initialized");
+            logData("Agent has been successfully initialized");
             watchService = (WatchService) agent;
-            watchService.sendData("Init");
             QueryScheduler queryScheduler = new QueryScheduler();
             queryScheduler.startScheduler();
+            checkExerciseReset();
         }
 
         @Override
@@ -68,31 +84,44 @@ public class BackgroundService extends Service {
     @Override
     public void onCreate () {
         SAAgentV2.requestAgent(getApplicationContext(), WatchService.class.getName(), watchAgentCallback);
+
+        try {
+            interpreter = new Interpreter(loadModelFile());
+        } catch (Exception err) {
+            logData("Error setting up TensorFlow (" + err.getMessage() + ")");
+        }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         logData("Background Service Started");
         broadcaster = new Broadcaster();
         getTileData();
-        checkExerciseReset();
         serviceRunning = true;
+
+        //Foreground Service code from https://codinginflow.com/tutorials/android/foreground-service
+        Intent serviceIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, serviceIntent, 0);
+
+        Notification serviceNotification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("mHealth")
+                .setContentText("Collecting Data")
+                .setSmallIcon(R.mipmap.ic_small)
+                .setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), R.mipmap.ic_launcher))
+                .setPriority(Notification.PRIORITY_MIN)
+                .setShowWhen(false)
+                .setContentIntent(pendingIntent)
+                .build();
+
+        startForeground(1, serviceNotification);
+
         return START_STICKY;
     }
 
-    private final IBinder localBinder = new LocalBinder();
-
     @Override
     public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
-        logData("Service is bound");
-        return localBinder;
-    }
-
-    public class LocalBinder extends Binder {
-        public BackgroundService getService() {
-            return BackgroundService.this;
-        }
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
@@ -148,9 +177,10 @@ public class BackgroundService extends Service {
         if (lastResetString != null) {
             Date lastReset = new Date(lastResetString);
 
-            if (lastReset.getDay() != new Date().getDay()) {
+            if (lastReset.getDate() != new Date().getDate()) {
                 watchService.setSensorRequest("Reset");
                 watchService.findPeers();
+                exerciseReset = true;
 
                 dataToBeCompiled = true;
             }
@@ -172,16 +202,22 @@ public class BackgroundService extends Service {
             broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
             broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
 
-            watchService.setSensorRequest("Exercise");
-            watchService.findPeers();
+            if (watchService != null) {
+                watchService.setSensorRequest("Exercise");
+                watchService.findPeers();
+            }
         }
 
         appInForeground = appState;
     }
 
-    private static String sleepToString (long sleepDuration) {
-        long sleepMinutes = TimeUnit.MILLISECONDS.toMinutes(sleepDuration);
+    public static String sleepToString (long sleepDuration) {
+        long sleepMinutes = sleepDuration;
         String hoursString = " hours ";
+        if (sleepMinutes < 60) {
+            return ("0 hours "+ String.valueOf(sleepMinutes) + " minutes");
+        }
+
         if (sleepMinutes > 600) {
             hoursString = " hrs ";
         }
@@ -197,6 +233,7 @@ public class BackgroundService extends Service {
             caloriesBurned = Integer.parseInt(data);
         } else if (type.equals("Sleep")) {
             sleep = Long.parseLong(data);
+            data = sleepToString(Long.parseLong(data));
         }
         broadcaster.sendContentUpdate(type, data);
     }
@@ -217,11 +254,17 @@ public class BackgroundService extends Service {
                 }
 
                 if (watchService != null) {
+                    if (exerciseReset) {
+                        watchService.setSensorRequest("Reset");
+                        watchService.findPeers();
+                    }
+
                     if (currentMinutes < 10) {
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(0));
                         if (currentMinutes == 1) {
                             if (currentHours == 0) {
                                 logData("Resetting Data");
+                                exerciseReset = true;
                                 watchService.setSensorRequest("Reset");
                                 watchService.findPeers();
                             }
@@ -229,10 +272,14 @@ public class BackgroundService extends Service {
                     } else {
                         if (currentMinutes == 30 || currentMinutes == 58) {
                             checkExercise = true;
-                        } else if (currentMinutes == 59 && currentHours == 0) {
-                            compileDailyData();
                         }
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(1));
+                    }
+
+                    if (currentHours == 23) {
+                        if (currentMinutes == 59) {
+                            compileDailyData();
+                        }
                     }
 
                     if (intervalCheck.equals("5") || intervalCheck.equals("0")) {
@@ -273,6 +320,15 @@ public class BackgroundService extends Service {
                 watchService.findPeers();
             }
         }
+    }
+
+    private void sendNotification (String title, String data) {
+        /*Notification notificationBuilder = new NotificationCompat.Builder(this)
+                .setAutoCancel((true));*/
+    }
+
+    public static void setResetExercise (Boolean reset) {
+        exerciseReset = reset;
     }
 
     public void compileDailyData () {
@@ -337,9 +393,94 @@ public class BackgroundService extends Service {
                 }
             });
             realm.close();
+
+            float[] inputValues = new float[11];
+            inputValues[0] = minHeartrate;
+            inputValues[1] = maxHeartrate;
+            inputValues[2] = averageHeartrate;
+            inputValues[3] = exerciseObject.getSteps();
+            inputValues[4] = (int) exerciseObject.getCaloriesBurned();
+            inputValues[5] = sleepObject.getDuration();
+            inputValues[6] = (sleepObject.getDuration() >= 450) ? 1 : 0;
+            inputValues[7] = (exerciseObject.getSteps() >= 6000) ? 1 : 0;
+            inputValues[8] = inputValues[4] / exerciseObject.getSteps();
+            inputValues[9] = inputValues[5] / inputValues[2];
+            inputValues[10] = inputValues[3] / inputValues[2];
+
+            float[] MLOutput = getMLOutput(inputValues);
+            String MLRating = "";
+            String MLRecommendation = "";
+
+            if (MLOutput[0] > MLOutput[1]) {
+                MLRating = "Unhealthy";
+                if (exerciseObject.getSteps() < 6000 || exerciseObject.getCaloriesBurned() < 255) {
+                    MLRecommendation = "Exercise more";
+                    if (sleepObject.getDuration() < 450) {
+                        MLRecommendation = "Exercise and sleep more";
+                    }
+
+                    if (averageHeartrate > 65) {
+                        MLRecommendation = "Exercise more and reduce stress";
+                    }
+                } else if (sleepObject.getDuration() < 450) {
+                    MLRecommendation = "Sleep more";
+
+                    if (averageHeartrate > 65) {
+                        MLRecommendation = "Sleep more and reduce stress";
+                    }
+                } else if (exerciseObject.getSteps() >= 6000 && exerciseObject.getCaloriesBurned() >= 255
+                        && sleepObject.getDuration() >= 450) {
+                    if (averageHeartrate > 65) {
+                        MLRating = "Unhealthy";
+                        MLRecommendation = "Reduce stress";
+                    } else {
+                        MLRating = "Somewhat Unhealthy";
+                        MLRecommendation = "Exercise and sleep more";
+                    }
+                }
+
+            } else if (MLOutput[0] < MLOutput[1]) {
+                MLRating = "Healthy";
+                MLRecommendation = "Keep it up";
+            }
+
+            Notification serviceNotification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle("mHealth")
+                    .setContentText(MLRating)
+                    .setSmallIcon(R.mipmap.ic_small)
+                    .setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), R.mipmap.ic_launcher))
+                    .setPriority(Notification.PRIORITY_MIN)
+                    .setShowWhen(false)
+                    .build();
+
+            NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            mNotificationManager.notify(1, serviceNotification);
+
+            broadcaster.sendContentUpdate("Rating", MLRating);
+            broadcaster.sendContentUpdate("Recommendation", MLRecommendation);
+
         } catch (RuntimeException err) {
             logData("Error getting daily data (" + err.getMessage() + ")");
         }
+    }
+
+    public static float[] getMLOutput (float[] inputArray) {
+        float[][] outputArray = new float[1][2];
+
+        interpreter.run (inputArray, outputArray);
+
+        logData(String.valueOf("Unhealthy: " + outputArray[0][0] + " Healthy: " + outputArray[0][1]));
+
+        return outputArray[0];
+    }
+
+    private MappedByteBuffer loadModelFile () throws IOException {
+        AssetFileDescriptor fileDescriptor = getAssets().openFd("mHealth_Model.tflite");
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
     static void logData (String message) {
@@ -350,21 +491,23 @@ public class BackgroundService extends Service {
             e.printStackTrace();
         }
 
-        AndroidNetworking.post("https://custom-logging-api.herokuapp.com/logs")
-                .addJSONObjectBody(jsonObject) // posting json
-                .setTag("")
-                .setPriority(Priority.MEDIUM)
-                .build()
-                .getAsJSONArray(new JSONArrayRequestListener() {
-                    @Override
-                    public void onResponse(JSONArray response) {
-                        // do anything with response
-                    }
-                    @Override
-                    public void onError(ANError error) {
-                        // handle error
-                    }
-                });
+        new Thread(() -> {
+            AndroidNetworking.post("https://custom-logging-api.herokuapp.com/logs")
+                    .addJSONObjectBody(jsonObject) // posting json
+                    .setTag("")
+                    .setPriority(Priority.MEDIUM)
+                    .build()
+                    .getAsJSONArray(new JSONArrayRequestListener() {
+                        @Override
+                        public void onResponse(JSONArray response) {
+                            // do anything with response
+                        }
+                        @Override
+                        public void onError(ANError error) {
+                            // handle error
+                        }
+                    });
+        }).start();
     }
 
     public class Broadcaster {
