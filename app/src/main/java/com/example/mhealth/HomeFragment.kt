@@ -106,7 +106,7 @@ class HomeFragment : Fragment() {
                     dataToBeLoaded = true
                     return
                 }
-                health_Recommendation.text = rating
+                health_Rating.text = rating
             } else if (intent.getStringExtra("contentType").equals("Recommendation")) {
                 val recommendation = intent.getStringExtra("data")
                 healthRecommendation = recommendation
