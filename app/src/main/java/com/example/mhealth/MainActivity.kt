@@ -101,7 +101,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         interpreter = Interpreter(loadModelFile())
-        logData(checkServiceRunning("com.example.mhealth.BackgroundService").toString())
+
         if (!checkServiceRunning("com.example.mhealth.BackgroundService")) {
             val intent = Intent(this, BackgroundService::class.java)
             startService(intent)

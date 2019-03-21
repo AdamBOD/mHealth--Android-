@@ -93,7 +93,6 @@ public class BackgroundService extends Service {
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        logData("Background Service Started");
         broadcaster = new Broadcaster();
         getTileData();
         serviceRunning = true;
@@ -134,7 +133,6 @@ public class BackgroundService extends Service {
     }
 
     public void getTileData () {
-        logData("Getting tile data");
         Realm.init(getApplicationContext());
         RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
                 .deleteRealmIfMigrationNeeded()
@@ -147,23 +145,31 @@ public class BackgroundService extends Service {
         try {
             HeartrateObject heartrateObject = realm.where(HeartrateObject.class).sort("time").findAll().last();
             heartrate = heartrateObject.getHeartrate();
-            broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
+            if (broadcaster != null) {
+                broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
+            }
 
             TempHealthDataObject exerciseObject = realm.where(TempHealthDataObject.class).findFirst();
             stepsTaken = exerciseObject.getStepsTaken();
             caloriesBurned = (int) Math.round(exerciseObject.getCaloriesBurned());
-            broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
-            broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
+            if (broadcaster != null) {
+                broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
+                broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
+            }
 
             SleepObject sleepObject = realm.where(SleepObject.class).sort("date").findAll().last();
             sleep = sleepObject.getDuration();
-            broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
+            if (broadcaster != null) {
+                broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
+            }
         } catch (RuntimeException err) {
             logData ("No Realm data");
-            broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
-            broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
-            broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
-            broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
+            if (broadcaster != null) {
+                broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
+                broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
+                broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
+                broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
+            }
         }
         realm.close();
     }
@@ -245,6 +251,8 @@ public class BackgroundService extends Service {
                 int currentHours = Calendar.getInstance().getTime().getHours();
                 int currentMinutes = Calendar.getInstance().getTime().getMinutes();
                 String intervalCheck;
+
+                logData("Looped " + currentMinutes);
 
                 if (dataToBeCompiled) {
                     compileDailyData();
@@ -369,7 +377,6 @@ public class BackgroundService extends Service {
                     averageHeartrate, exerciseObject.getSteps(), exerciseObject.getCaloriesBurned(),
                     sleepObject.getDuration(), new Date());
 
-            logData("Daily Data Object: " + healthDataObject.toString());
             realm.executeTransaction(new Realm.Transaction() {
                 @Override
                 public void execute (Realm realm) {
@@ -460,8 +467,6 @@ public class BackgroundService extends Service {
         float[][] outputArray = new float[1][2];
 
         interpreter.run (inputArray, outputArray);
-
-        logData(String.valueOf("Unhealthy: " + outputArray[0][0] + " Healthy: " + outputArray[0][1]));
 
         return outputArray[0];
     }

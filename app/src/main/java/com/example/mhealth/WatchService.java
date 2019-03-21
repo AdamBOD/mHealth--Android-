@@ -216,7 +216,6 @@ public class WatchService extends SAAgentV2 {
         @Override
         public void onReceive(int channelId, byte[] data) {
             if (data == null) {
-                logData("Empty Response, retrying");
                 sendData("Retry");
                 return;
             }
@@ -225,7 +224,6 @@ public class WatchService extends SAAgentV2 {
                 if (!message.equals("undefined")) {
                     if (!message.equals("Error getting data from watch.")) {
                         if (message.equals("ExerciseReset")) {
-                            logData("Exercise Reset");
                             setResetExercise(false);
                             setSensorRequest("Exercise");
                             findPeers();
@@ -373,7 +371,6 @@ public class WatchService extends SAAgentV2 {
                             if (!retryConnection) {
                                 retryConnection = true;
                                 receivedData = true;
-                                logData ("Error getting data from watch, trying again");
                                 sendData("Retry");
                             } else {
                                 retryConnection = false;
@@ -417,7 +414,6 @@ public class WatchService extends SAAgentV2 {
                                 sendData(getSensorRequest());
                                 retryConnection = false;
                             } else if (!receivedData && !retryConnection) {
-                                logData("Cancelling heart rate check");
                                 setSensorRequest("StopHeart");
                             }
                         }
@@ -425,6 +421,7 @@ public class WatchService extends SAAgentV2 {
 
                     setTimeout(runnable, 30000);
                 }
+
                 logData("Querying: " + getSensorRequest());
                 receivedData = false;
                 retvalue = true;
@@ -630,16 +627,10 @@ public class WatchService extends SAAgentV2 {
                     .build()
                     .getAsJSONArray(new JSONArrayRequestListener() {
                         @Override
-                        public void onResponse(JSONArray response) {
-                            // do anything with response
+                        public void onResponse(JSONArray response) {}
 
-                            logData ("Successfully sent data");
-                        }
                         @Override
-                        public void onError(ANError error) {
-                            // handle error
-                            logData ("Failed to send data (" + error.getMessage() + ")" + "(" + error.getErrorDetail() + ")");
-                        }
+                        public void onError(ANError error) {}
                     });
         }
     }
