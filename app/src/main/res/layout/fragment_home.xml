@@ -79,7 +79,7 @@
                     android:layout_width="100dp"
                     android:layout_height="100dp"
                     android:layout_marginTop="12.5dp"
-                    android:layout_marginBottom="12.5dp"
+                    android:layout_marginBottom="13dp"
                     android:layout_gravity="center_horizontal"
                     app:srcCompat="@drawable/tile_heart" />
                 <TextView
