@@ -34,6 +34,9 @@ class HomeFragment : Fragment() {
     private var sleep: String = ""
     private var healthRating: String = ""
     private var healthRecommendation: String = ""
+    private var stepsProgress: Int = 0
+    private var caloriesProgress: Int = 0
+    private var sleepProgress: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +58,7 @@ class HomeFragment : Fragment() {
         health_Recommendation.text = outputValues[1]
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onStart() {
         BackgroundService.updateAppState(true)
         if (dataToBeLoaded) {
@@ -62,6 +66,25 @@ class HomeFragment : Fragment() {
             tile_StepsTaken.text = stepsTaken
             tile_CaloriesBurned.text = caloriesBurned
             tile_Sleep.text = sleep
+
+            steps_Bar.progress = stepsProgress
+            if (stepsProgress == 100) {
+                steps_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
+                        android.graphics.PorterDuff.Mode.SRC_IN)
+            }
+
+            calories_Bar.progress = caloriesProgress
+            if (caloriesProgress == 100) {
+                calories_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
+                        android.graphics.PorterDuff.Mode.SRC_IN)
+            }
+
+            sleep_Bar.progress = sleepProgress
+            if (sleepProgress == 100) {
+                sleep_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
+                        android.graphics.PorterDuff.Mode.SRC_IN)
+            }
+
             dataToBeLoaded = false
         }
         super.onStart()
@@ -82,12 +105,21 @@ class HomeFragment : Fragment() {
                 val stepsInt = intent.getStringExtra("data").toInt()
 
                 if (stepsInt >= 6000) {
-                    steps_Bar.setProgress (100, true)
-                    steps_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
-                            android.graphics.PorterDuff.Mode.SRC_IN)
+                    stepsProgress = 100
+                    if (steps_Bar != null) {
+                        steps_Bar.progress = stepsProgress
+                        steps_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
+                                android.graphics.PorterDuff.Mode.SRC_IN)
+                    } else {
+                        dataToBeLoaded = true
+                    }
                 } else {
-                    val stepsProgress: Int = ((stepsInt.toDouble() / 6000.toDouble()) * 100).toInt()
-                    steps_Bar.setProgress(stepsProgress, true)
+                    stepsProgress = ((stepsInt.toDouble() / 6000.toDouble()) * 100).toInt()
+                    if (steps_Bar != null) {
+                        steps_Bar.progress = stepsProgress
+                    } else {
+                        dataToBeLoaded = true
+                    }
                 }
 
                 val newSteps = intent.getStringExtra("data") + " Steps"
@@ -101,12 +133,22 @@ class HomeFragment : Fragment() {
                 val caloriesInt = intent.getStringExtra("data").toInt()
 
                 if (caloriesInt >= 260) {
-                    calories_Bar.setProgress (100, true)
-                    calories_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
-                            android.graphics.PorterDuff.Mode.SRC_IN)
+                    caloriesProgress = 100
+                    if (calories_Bar != null) {
+                        calories_Bar.progress = caloriesProgress
+                        calories_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
+                                android.graphics.PorterDuff.Mode.SRC_IN)
+                    } else {
+                        dataToBeLoaded = true
+                    }
+
                 } else {
-                    val caloriesProgress: Int = ((caloriesInt.toDouble() / 260.toDouble()) * 100).toInt()
-                    calories_Bar.setProgress(caloriesProgress, true)
+                    caloriesProgress = ((caloriesInt.toDouble() / 260.toDouble()) * 100).toInt()
+                    if (calories_Bar != null) {
+                        calories_Bar.progress = caloriesProgress
+                    } else {
+                        dataToBeLoaded = true
+                    }
                 }
 
                 val calories = intent.getStringExtra("data") + " kCal"
@@ -120,12 +162,21 @@ class HomeFragment : Fragment() {
                 val sleepInt = intent.getStringExtra("data").toInt()
 
                 if (sleepInt >= 450) {
-                    sleep_Bar.setProgress (100, true)
-                    sleep_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
-                            android.graphics.PorterDuff.Mode.SRC_IN)
+                    sleepProgress = 100
+                    if (sleep_Bar != null) {
+                        sleep_Bar.progress = sleepProgress
+                        sleep_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
+                                android.graphics.PorterDuff.Mode.SRC_IN)
+                    } else {
+                        dataToBeLoaded = true
+                    }
                 } else {
-                    val sleepProgress: Int = ((sleepInt.toDouble() / 450.toDouble()) * 100).toInt()
-                    sleep_Bar.progress = sleepProgress
+                    sleepProgress = ((sleepInt.toDouble() / 450.toDouble()) * 100).toInt()
+                    if (sleep_Bar != null) {
+                        sleep_Bar.progress = sleepProgress
+                    } else {
+                        dataToBeLoaded = true
+                    }
                 }
 
                 var timeSlept = intent.getStringExtra("data")
