@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -13,6 +14,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
+import com.example.mhealth.BackgroundService.sleepToString
 import kotlinx.android.synthetic.main.fragment_home.*
 
 /**
@@ -66,6 +68,7 @@ class HomeFragment : Fragment() {
     }
 
     private val broadcastReceiver = object: BroadcastReceiver() {
+        @RequiresApi(Build.VERSION_CODES.N)
         override fun onReceive (context: Context?, intent: Intent) {
             if (intent.getStringExtra("contentType").equals("Heart")) {
                 val newBPM = intent.getStringExtra("data") + " BPM"
@@ -76,6 +79,17 @@ class HomeFragment : Fragment() {
                 }
                 tile_Heartrate.text = newBPM
             } else if (intent.getStringExtra("contentType").equals("Steps")) {
+                val stepsInt = intent.getStringExtra("data").toInt()
+
+                if (stepsInt >= 6000) {
+                    steps_Bar.setProgress (100, true)
+                    steps_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
+                            android.graphics.PorterDuff.Mode.SRC_IN)
+                } else {
+                    val stepsProgress: Int = ((stepsInt.toDouble() / 6000.toDouble()) * 100).toInt()
+                    steps_Bar.setProgress(stepsProgress, true)
+                }
+
                 val newSteps = intent.getStringExtra("data") + " Steps"
                 stepsTaken = newSteps
                 if (tile_StepsTaken == null) {
@@ -84,6 +98,17 @@ class HomeFragment : Fragment() {
                 }
                 tile_StepsTaken.text = newSteps
             } else if (intent.getStringExtra("contentType").equals("Calories")) {
+                val caloriesInt = intent.getStringExtra("data").toInt()
+
+                if (caloriesInt >= 260) {
+                    calories_Bar.setProgress (100, true)
+                    calories_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
+                            android.graphics.PorterDuff.Mode.SRC_IN)
+                } else {
+                    val caloriesProgress: Int = ((caloriesInt.toDouble() / 260.toDouble()) * 100).toInt()
+                    calories_Bar.setProgress(caloriesProgress, true)
+                }
+
                 val calories = intent.getStringExtra("data") + " kCal"
                 caloriesBurned = calories
                 if (tile_Heartrate == null) {
@@ -92,8 +117,20 @@ class HomeFragment : Fragment() {
                 }
                 tile_CaloriesBurned.text = calories
             } else if (intent.getStringExtra("contentType").equals("Sleep")) {
-                val timeSlept = intent.getStringExtra("data")
-                sleep = timeSlept
+                val sleepInt = intent.getStringExtra("data").toInt()
+
+                if (sleepInt >= 450) {
+                    sleep_Bar.setProgress (100, true)
+                    sleep_Bar.progressDrawable.setColorFilter(Color.parseColor("#1fd219"),
+                            android.graphics.PorterDuff.Mode.SRC_IN)
+                } else {
+                    val sleepProgress: Int = ((sleepInt.toDouble() / 450.toDouble()) * 100).toInt()
+                    sleep_Bar.progress = sleepProgress
+                }
+
+                var timeSlept = intent.getStringExtra("data")
+                sleep = sleepToString(timeSlept.toLong())
+                timeSlept = sleep
                 if (tile_Sleep == null) {
                     dataToBeLoaded = true
                     return

@@ -16,4 +16,8 @@
     <string name="average">Average: </string>
     <string name="minimum">Minimum: </string>
     <string name="maximum">Maximum: </string>
+
+    <string name="progress_steps">6000 Steps</string>
+    <string name="progress_calories">260 kCal</string>
+    <string name="progress_sleep">7 hours 30 minutes</string>
 </resources>

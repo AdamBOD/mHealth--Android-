@@ -160,7 +160,7 @@ public class BackgroundService extends Service {
             SleepObject sleepObject = realm.where(SleepObject.class).sort("date").findAll().last();
             sleep = sleepObject.getDuration();
             if (broadcaster != null) {
-                broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
+                broadcaster.sendContentUpdate("Sleep", String.valueOf(sleep));
             }
         } catch (RuntimeException err) {
             logData ("No Realm data");
@@ -168,7 +168,7 @@ public class BackgroundService extends Service {
                 broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
                 broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
                 broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
-                broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
+                broadcaster.sendContentUpdate("Sleep", String.valueOf(sleep));
             }
         }
         realm.close();
@@ -204,7 +204,7 @@ public class BackgroundService extends Service {
             broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
             broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
             broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
-            broadcaster.sendContentUpdate("Sleep", sleepToString(sleep));
+            broadcaster.sendContentUpdate("Sleep", String.valueOf(sleep));
 
             if (watchService != null) {
                 watchService.setSensorRequest("Exercise");
@@ -237,7 +237,6 @@ public class BackgroundService extends Service {
             caloriesBurned = Integer.parseInt(data);
         } else if (type.equals("Sleep")) {
             sleep = Long.parseLong(data);
-            data = sleepToString(Long.parseLong(data));
         }
         broadcaster.sendContentUpdate(type, data);
     }
