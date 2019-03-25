@@ -251,8 +251,6 @@ public class BackgroundService extends Service {
                 int currentMinutes = Calendar.getInstance().getTime().getMinutes();
                 String intervalCheck;
 
-                logData("Looped " + currentMinutes);
-
                 if (dataToBeCompiled) {
                     compileDailyData();
                     dataToBeCompiled = false;
