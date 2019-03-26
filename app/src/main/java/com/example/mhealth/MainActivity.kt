@@ -189,7 +189,7 @@ class MainActivity : AppCompatActivity() {
         var outputRating = ""
         var outputRecommendation = ""
 
-        if (outputArray[0] > outputArray[1]) {
+        if (outputArray[1] > outputArray[0]) {
             outputRating = "Unhealthy"
             if (healthData.stepsTaken < 6000 || healthData.caloriesBurned < 255) {
                 outputRecommendation = "Exercise more"
@@ -215,7 +215,7 @@ class MainActivity : AppCompatActivity() {
                     outputRecommendation = "Exercise and sleep more"
                 }
             }
-        } else if (outputArray[0] < outputArray[1]) {
+        } else if (outputArray[1] < outputArray[0]) {
             outputRating = "Healthy"
             outputRecommendation = "Keep it up"
         }

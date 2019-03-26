@@ -408,7 +408,7 @@ public class BackgroundService extends Service {
             String MLRating = "";
             String MLRecommendation = "";
 
-            if (MLOutput[0] > MLOutput[1]) {
+            if (MLOutput[1] > MLOutput[0]) {
                 MLRating = "Unhealthy";
                 if (exerciseObject.getSteps() < 6000 || exerciseObject.getCaloriesBurned() < 255) {
                     MLRecommendation = "Exercise more";
@@ -435,7 +435,7 @@ public class BackgroundService extends Service {
                     }
                 }
 
-            } else if (MLOutput[0] < MLOutput[1]) {
+            } else if (MLOutput[1] < MLOutput[0]) {
                 MLRating = "Healthy";
                 MLRecommendation = "Keep it up";
             }
