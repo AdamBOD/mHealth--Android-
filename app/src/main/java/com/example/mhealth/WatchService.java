@@ -337,7 +337,7 @@ public class WatchService extends SAAgentV2 {
                             if (lastSleepStatus != null) {
                                 if (!lastSleepStatus.equals(currentStatus)) {
                                     if (lastSleepStatus.equals("ASLEEP")) {
-                                        if (new Date().getTime() - sleepData.getTimestamp() >= 3600000) {
+                                        if (new Date().getTime() - sleepData.getTimestamp() >= 360000) {
                                             long duration = ((sleepData.getTimestamp() - lastSleepTimestamp) / 1000) / 60;
                                             if (duration > 20) {
                                                 logData("Duration of Sleep: " + String.valueOf(duration));
