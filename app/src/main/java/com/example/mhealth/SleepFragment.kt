@@ -163,7 +163,7 @@ class SleepFragment : Fragment() {
             }
         }
 
-        val averageLimit = LimitLine(480f, "Target")
+        val averageLimit = LimitLine(480f, "8 hours")
         averageLimit.lineWidth = 4f
         averageLimit.lineColor = Color.parseColor("#9E9E9E")
         averageLimit.enableDashedLine(30f, 10f, 0f)

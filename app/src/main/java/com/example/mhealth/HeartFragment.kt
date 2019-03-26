@@ -166,7 +166,7 @@ class HeartFragment : Fragment() {
             }
         }
 
-        val averageLimit = LimitLine(65f, "Target")
+        val averageLimit = LimitLine(70f, "70 BPM")
         averageLimit.lineWidth = 4f
         averageLimit.lineColor = Color.parseColor("#9E9E9E")
         averageLimit.enableDashedLine(30f, 10f, 0f)
