@@ -162,7 +162,7 @@ class StepsFragment : Fragment() {
             }
         }
 
-        val averageLimit = LimitLine(6000f, "6000 steps")
+        val averageLimit = LimitLine(6000f, "6000 Steps")
         averageLimit.lineWidth = 4f
         averageLimit.lineColor = Color.parseColor("#9E9E9E")
         averageLimit.enableDashedLine(30f, 10f, 0f)
