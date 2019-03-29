@@ -95,7 +95,7 @@ public class WatchService extends SAAgentV2 {
         try {
             previousDataObject = realmDBHandler.getHealthData();
         } catch (RuntimeException err) {
-            logData("Error getting previous data on boot (" + err.getMessage() + ")");
+            //logData("Error getting previous data on boot (" + err.getMessage() + ")");
         }
 
         if (previousDataObject != null) {
@@ -141,13 +141,13 @@ public class WatchService extends SAAgentV2 {
             for(SAPeerAgent peerAgent:peerAgents)
                 requestServiceConnection(peerAgent);
         } else if (result == SAAgentV2.FINDPEER_DEVICE_NOT_CONNECTED) {
-            logData ("FINDPEER_DEVICE_NOT_CONNECTED");
+            //logData ("FINDPEER_DEVICE_NOT_CONNECTED");
             if (getSensorRequest().equals("Reset")) {
                 setResetExercise(true);
             }
-            Log.e("Watch Error","Disconnected");
+            //Log.e("Watch Error","Disconnected");
         } else if (result == SAAgentV2.FINDPEER_SERVICE_NOT_FOUND) {
-            logData ("FINDPEER_SERVICE_NOT_FOUND");
+            //logData ("FINDPEER_SERVICE_NOT_FOUND");
             if (getSensorRequest().equals("Reset")) {
                 setResetExercise(true);
             }
@@ -177,7 +177,7 @@ public class WatchService extends SAAgentV2 {
             //Toast.makeText(mContext, "CONNECTION_DUPLICATE_REQUEST", Toast.LENGTH_LONG).show();
         } else {
             //Toast.makeText(mContext, "Failed to connect", Toast.LENGTH_LONG).show();
-            logData ("Failed to connect");
+            //logData ("Failed to connect");
         }
     }
 
@@ -232,7 +232,7 @@ public class WatchService extends SAAgentV2 {
                         receivedData = true;
                         retryConnection = false;
                         JsonObject receivedObject = new JsonParser().parse(message).getAsJsonObject();
-                        logData(receivedObject.toString());
+                        //logData(receivedObject.toString());
 
                         if (message.equals("{}")) {
                             return;
@@ -340,7 +340,7 @@ public class WatchService extends SAAgentV2 {
                                         if (new Date().getTime() - sleepData.getTimestamp() >= 360000) {
                                             long duration = ((sleepData.getTimestamp() - lastSleepTimestamp) / 1000) / 60;
                                             if (duration > 20) {
-                                                logData("Duration of Sleep: " + String.valueOf(duration));
+                                                //logData("Duration of Sleep: " + String.valueOf(duration));
                                                 SleepObject sleepObject = new SleepObject(duration, new Date());
                                                 realmDBHandler.addToDB(sleepObject);
                                             }
@@ -357,7 +357,7 @@ public class WatchService extends SAAgentV2 {
                                         previousData.setSleepTimestamp(lastSleepTimestamp);
                                         realmDBHandler.setHealthData(previousData);
                                     } else {
-                                        logData("Error getting Sleep data");
+                                        //logData("Error getting Sleep data");
                                     }
                                 }
                             } else {
@@ -375,7 +375,7 @@ public class WatchService extends SAAgentV2 {
                             } else {
                                 retryConnection = false;
                                 receivedData = true;
-                                logData ("Error getting data from watch, terminating");
+                                //logData ("Error getting data from watch, terminating");
                             }
                         } else {
                             sendData("Retry");
@@ -383,7 +383,7 @@ public class WatchService extends SAAgentV2 {
                     }
                 } else {
                     receivedData = true;
-                    logData ("Error getting data from watch, data undefined, retrying");
+                    //logData ("Error getting data from watch, data undefined, retrying");
                     sendData("Retry");
                 }
             }
@@ -422,7 +422,7 @@ public class WatchService extends SAAgentV2 {
                     setTimeout(runnable, 30000);
                 }
 
-                logData("Querying: " + getSensorRequest());
+                //logData("Querying: " + getSensorRequest());
                 receivedData = false;
                 retvalue = true;
             } catch (IOException e) {
@@ -530,7 +530,7 @@ public class WatchService extends SAAgentV2 {
             try {
                 sleepResults = realm.where(SleepObject.class).between("date", startDate, endDate).findFirst();
             } catch (RuntimeException err) {
-                logData("Error getting previous sleep object from the day");
+                //logData("Error getting previous sleep object from the day");
                 sleepResults = null;
             }
 
@@ -591,7 +591,7 @@ public class WatchService extends SAAgentV2 {
                 realm.close();
                 return healthData;
             } catch (RuntimeException err) {
-                logData("Previous data empty");
+                //logData("Previous data empty");
                 return null;
             }
 

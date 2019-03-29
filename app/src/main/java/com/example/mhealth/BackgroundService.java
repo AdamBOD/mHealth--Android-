@@ -55,6 +55,8 @@ public class BackgroundService extends Service {
     private static int stepsTaken = 0;
     private static int caloriesBurned = 0;
     private static long sleep = 0;
+    private static String rating = "";
+    private static String recommendation = "";
 
     private String CHANNEL_ID = "mHealthChannel";
 
@@ -63,7 +65,7 @@ public class BackgroundService extends Service {
     private SAAgentV2.RequestAgentCallback watchAgentCallback = new SAAgentV2.RequestAgentCallback() {
         @Override
         public void onAgentAvailable(SAAgentV2 agent) {
-            logData("Agent has been successfully initialized");
+            //logData("Agent has been successfully initialized");
             watchService = (WatchService) agent;
             QueryScheduler queryScheduler = new QueryScheduler();
             queryScheduler.startScheduler();
@@ -86,7 +88,7 @@ public class BackgroundService extends Service {
         try {
             interpreter = new Interpreter(loadModelFile());
         } catch (Exception err) {
-            logData("Error setting up TensorFlow (" + err.getMessage() + ")");
+            //logData("Error setting up TensorFlow (" + err.getMessage() + ")");
         }
     }
 
@@ -128,7 +130,7 @@ public class BackgroundService extends Service {
             watchService = null;
         }
         serviceRunning = false;
-        logData("Service stopped");
+        //logData("Service stopped");
         super.onDestroy();
     }
 
@@ -163,7 +165,7 @@ public class BackgroundService extends Service {
                 broadcaster.sendContentUpdate("Sleep", String.valueOf(sleep));
             }
         } catch (RuntimeException err) {
-            logData ("No Realm data");
+            //logData ("No Realm data");
             if (broadcaster != null) {
                 broadcaster.sendContentUpdate("Heart", String.valueOf(heartrate));
                 broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
@@ -189,7 +191,7 @@ public class BackgroundService extends Service {
                 dataToBeCompiled = true;
             }
         } else {
-            logData("Last Reset is null");
+            //logData("Last Reset is null");
             SharedPreferences.Editor sharedPreferencesEditor = getApplicationContext().getSharedPreferences("mHealth", MODE_PRIVATE).edit();
             sharedPreferencesEditor.putString("exerciseReset", new Date().toString());
             sharedPreferencesEditor.apply();
@@ -205,6 +207,14 @@ public class BackgroundService extends Service {
             broadcaster.sendContentUpdate("Steps", String.valueOf(stepsTaken));
             broadcaster.sendContentUpdate("Calories", String.valueOf(caloriesBurned));
             broadcaster.sendContentUpdate("Sleep", String.valueOf(sleep));
+
+            if (!rating.equals("")) {
+                broadcaster.sendContentUpdate("Rating", String.valueOf(rating));
+            }
+
+            if (!recommendation.equals("")) {
+                broadcaster.sendContentUpdate("Rating", String.valueOf(recommendation));
+            }
 
             if (watchService != null) {
                 watchService.setSensorRequest("Exercise");
@@ -266,7 +276,7 @@ public class BackgroundService extends Service {
                         intervalCheck = Character.toString(String.valueOf(currentMinutes).charAt(0));
                         if (currentMinutes == 1) {
                             if (currentHours == 0) {
-                                logData("Resetting Data");
+                                //logData("Resetting Data");
                                 exerciseReset = true;
                                 watchService.setSensorRequest("Reset");
                                 watchService.findPeers();
@@ -306,7 +316,7 @@ public class BackgroundService extends Service {
                         }
                     }
                 }  else {
-                    logData("WatchServiceAgent is null");
+                    //logData("WatchServiceAgent is null");
                 }
 
                 schedulerHandler.postAtTime(runnable, System.currentTimeMillis()+interval);
@@ -319,7 +329,7 @@ public class BackgroundService extends Service {
             if (watchService != null) {
                 watchService.findPeers();
             }  else {
-                logData("WatchServiceAgent is null");
+                //logData("WatchServiceAgent is null");
                 watchService.findPeers();
             }
         }
@@ -330,7 +340,7 @@ public class BackgroundService extends Service {
     }
 
     public void compileDailyData () {
-        logData("Compiling Daily Data");
+        //logData("Compiling Daily Data");
         Realm.init(getApplicationContext());
         RealmConfiguration realmConfiguration = new RealmConfiguration.Builder()
                 .deleteRealmIfMigrationNeeded()
@@ -452,11 +462,13 @@ public class BackgroundService extends Service {
             NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             mNotificationManager.notify(1, serviceNotification);
 
-            broadcaster.sendContentUpdate("Rating", MLRating);
-            broadcaster.sendContentUpdate("Recommendation", MLRecommendation);
+            rating = MLRating;
+            recommendation = MLRecommendation;
+            updateData("Rating", MLRating);
+            updateData("Recommendation", MLRecommendation);
 
         } catch (RuntimeException err) {
-            logData("Error getting daily data (" + err.getMessage() + ")");
+            //logData("Error getting daily data (" + err.getMessage() + ")");
         }
     }
 

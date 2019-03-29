@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
                 healthDataObjects = realm.where(HealthDataObject::class.java).sort("date").findAll()
                 healthDataResults = healthDataObjects
             } catch (err: RuntimeException) {
-                logData("Error getting historical data (" + err.message + ")")
+                //("Error getting historical data (" + err.message + ")")
             }
         }
 
@@ -139,7 +139,7 @@ class MainActivity : AppCompatActivity() {
         val navigation = findViewById<View>(R.id.navigation) as BottomNavigationView
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
 
-        logData ("Started App")
+        //logData ("Started App")
         AndroidNetworking.initialize(applicationContext)
     }
 
