@@ -213,7 +213,7 @@ public class BackgroundService extends Service {
             }
 
             if (!recommendation.equals("")) {
-                broadcaster.sendContentUpdate("Rating", String.valueOf(recommendation));
+                broadcaster.sendContentUpdate("Recommendation", String.valueOf(recommendation));
             }
 
             if (watchService != null) {
@@ -464,8 +464,8 @@ public class BackgroundService extends Service {
 
             rating = MLRating;
             recommendation = MLRecommendation;
-            updateData("Rating", MLRating);
-            updateData("Recommendation", MLRecommendation);
+            updateData("Rating", rating);
+            updateData("Recommendation", recommendation);
 
         } catch (RuntimeException err) {
             //logData("Error getting daily data (" + err.getMessage() + ")");
