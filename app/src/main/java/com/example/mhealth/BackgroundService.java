@@ -101,13 +101,15 @@ public class BackgroundService extends Service {
 
         //Foreground Service code from https://codinginflow.com/tutorials/android/foreground-service
         Intent serviceIntent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, serviceIntent, 0);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+                serviceIntent, 0);
 
         Notification serviceNotification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("mHealth")
                 .setContentText("Collecting Data")
                 .setSmallIcon(R.mipmap.ic_small)
-                .setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), R.mipmap.ic_launcher))
+                .setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(),
+                        R.mipmap.ic_launcher))
                 .setPriority(Notification.PRIORITY_MIN)
                 .setShowWhen(false)
                 .setContentIntent(pendingIntent)

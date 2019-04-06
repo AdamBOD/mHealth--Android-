@@ -268,8 +268,12 @@ public class WatchService extends SAAgentV2 {
                             boolean addObject = false;
                             ExerciseObject exerciseObject;
                             if (exerciseData.getStepCount() < lastStepCount) {
-                                SharedPreferences preferencesEditor = getApplicationContext().getSharedPreferences("mHealth", MODE_PRIVATE);
-                                String lastResetString = preferencesEditor.getString("exerciseReset", new Date().toString());
+                                SharedPreferences preferencesEditor = getApplicationContext()
+                                        .getSharedPreferences("mHealth", MODE_PRIVATE);
+
+                                String lastResetString = preferencesEditor.getString("exerciseReset",
+                                        new Date().toString());
+
                                 if (new Date().getDate() != new Date(lastResetString).getDate()) {
                                     addObject = true;
                                     lastStepCount = (int) exerciseData.getStepCount();
@@ -337,11 +341,12 @@ public class WatchService extends SAAgentV2 {
                             if (lastSleepStatus != null) {
                                 if (!lastSleepStatus.equals(currentStatus)) {
                                     if (lastSleepStatus.equals("ASLEEP")) {
-                                        if (new Date().getTime() - sleepData.getTimestamp() >= 360000) {
-                                            long duration = ((sleepData.getTimestamp() - lastSleepTimestamp) / 1000) / 60;
+                                        if (new Date().getTime() - sleepData.getTimestamp() >= 3600000) {
+                                            long duration = ((sleepData.getTimestamp() -
+                                                    lastSleepTimestamp) / 1000) / 60;
                                             if (duration > 20) {
-                                                //logData("Duration of Sleep: " + String.valueOf(duration));
-                                                SleepObject sleepObject = new SleepObject(duration, new Date());
+                                                SleepObject sleepObject = new SleepObject(duration,
+                                                        new Date());
                                                 realmDBHandler.addToDB(sleepObject);
                                             }
 
@@ -357,7 +362,6 @@ public class WatchService extends SAAgentV2 {
                                         previousData.setSleepTimestamp(lastSleepTimestamp);
                                         realmDBHandler.setHealthData(previousData);
                                     } else {
-                                        //logData("Error getting Sleep data");
                                     }
                                 }
                             } else {
